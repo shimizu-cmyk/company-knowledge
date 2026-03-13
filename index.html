@@ -1,822 +1,209 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>TECHNOP@L-NET 社内ナレッジ</title>
-  <meta name="description" content="社内PDF・規定・安全資料を検索できる社内ナレッジAI">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<title>社内ナレッジAI</title>
 
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-      background: #ffffff;
-      color: #202124;
-      min-height: 100vh;
-    }
+<style>
 
-    a {
-      color: inherit;
-    }
+body{
+font-family:sans-serif;
+background:#f6f7f9;
+margin:0;
+padding:40px;
+text-align:center;
+}
 
-    .page {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+h1{
+font-size:28px;
+margin-bottom:10px;
+}
 
-    .topbar {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      padding: 16px 24px;
-      font-size: 13px;
-      color: #5f6368;
-    }
+.searchbox{
+width:600px;
+max-width:90%;
+padding:14px;
+font-size:18px;
+border-radius:30px;
+border:1px solid #ccc;
+}
 
-    .hero {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px 16px 40px;
-    }
+.buttons{
+margin-top:20px;
+}
 
-    .hero-inner {
-      width: 100%;
-      max-width: 860px;
-      text-align: center;
-    }
+button{
+padding:10px 20px;
+margin:5px;
+border-radius:8px;
+border:0;
+background:#e9ecf1;
+font-size:14px;
+cursor:pointer;
+}
 
-    .site-logo {
-      display: block;
-      max-width: 100%;
-      width: 520px;
-      height: auto;
-      margin: 0 auto 18px;
-    }
+button:hover{
+background:#dfe3ea;
+}
 
-    .subtext {
-      font-size: 15px;
-      color: #5f6368;
-      margin: 0 0 28px;
-      line-height: 1.8;
-    }
+.result{
+margin-top:40px;
+max-width:700px;
+margin-left:auto;
+margin-right:auto;
+text-align:left;
+}
 
-    .search-shell {
-      width: 100%;
-      max-width: 760px;
-      margin: 0 auto;
-    }
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+margin-top:20px;
+}
 
-    .search-box {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 62px;
-      border: 1px solid #dfe1e5;
-      border-radius: 31px;
-      padding: 0 18px;
-      background: #fff;
-      box-shadow: 0 1px 6px rgba(32,33,36,.08);
-    }
-
-    .search-box:hover,
-    .search-box:focus-within {
-      box-shadow: 0 2px 10px rgba(32,33,36,.16);
-      border-color: rgba(223,225,229,0);
-    }
-
-    .search-icon {
-      font-size: 18px;
-      color: #9aa0a6;
-      flex: 0 0 auto;
-    }
-
-    .search-box input {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-size: 18px;
-      color: #202124;
-      background: transparent;
-      min-width: 0;
-    }
-
-    .search-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 24px;
-      flex-wrap: wrap;
-    }
-
-    .action-btn {
-      min-width: 128px;
-      border: 1px solid #f8f9fa;
-      background: #f8f9fa;
-      color: #3c4043;
-      font-size: 14px;
-      padding: 11px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .action-btn:hover {
-      border-color: #dadce0;
-      box-shadow: 0 1px 1px rgba(0,0,0,.1);
-    }
-
-    .status-note {
-      margin-top: 18px;
-      font-size: 13px;
-      color: #5f6368;
-    }
-
-    .category-toggle-wrap {
-      margin-top: 20px;
-    }
-
-    .category-panel {
-      display: none;
-      margin-top: 18px;
-    }
-
-    .category-panel.active {
-      display: block;
-    }
-
-    .quick-links {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .chip {
-      display: inline-block;
-      padding: 9px 14px;
-      border-radius: 999px;
-      background: #f1f3f4;
-      color: #3c4043;
-      font-size: 13px;
-      text-decoration: none;
-    }
-
-    .chip:hover {
-      background: #e8eaed;
-    }
-
-    .category-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-top: 16px;
-    }
-
-    .category-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 16px;
-      text-decoration: none;
-      text-align: left;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-
-    .category-card:hover {
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    }
-
-    .category-card h3 {
-      margin: 0 0 8px;
-      font-size: 17px;
-      color: #1f2937;
-    }
-
-    .category-card p {
-      margin: 0;
-      font-size: 13px;
-      color: #5f6368;
-      line-height: 1.6;
-    }
-
-    .results-wrap {
-      display: none;
-      width: 100%;
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 10px 16px 48px;
-    }
-
-    .results-wrap.active {
-      display: block;
-    }
-
-    .results-header {
-      max-width: 760px;
-      margin: 0 auto 2px;
-      font-size: 14px;
-      color: #5f6368;
-    }
-
-    .results-list {
-      max-width: 760px;
-      margin: 0 auto;
-    }
-
-    .result-item {
-      padding: 18px 0 20px;
-      border-bottom: 1px solid #f1f3f4;
-    }
-
-    .result-path {
-      font-size: 13px;
-      color: #5f6368;
-      margin-bottom: 6px;
-      word-break: break-all;
-    }
-
-    .result-title {
-      display: inline-block;
-      font-size: 22px;
-      line-height: 1.3;
-      color: #1a0dab;
-      text-decoration: none;
-      margin-bottom: 6px;
-    }
-
-    .result-title:hover {
-      text-decoration: underline;
-    }
-
-    .result-meta {
-      font-size: 13px;
-      color: #5f6368;
-      margin-bottom: 6px;
-      line-height: 1.6;
-    }
-
-    .result-snippet {
-      font-size: 14px;
-      color: #4d5156;
-      line-height: 1.7;
-      white-space: normal;
-      word-break: break-word;
-    }
-
-    .ai-panel {
-      display: none;
-      max-width: 760px;
-      margin: 0 auto 32px;
-      background: #f8f9fa;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 18px;
-    }
-
-    .ai-panel.active {
-      display: block;
-    }
-
-    .ai-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #1f2937;
-    }
-
-    .ai-answer {
-      font-size: 14px;
-      line-height: 1.8;
-      color: #374151;
-    }
-
-    .home-link {
-      display: none;
-      max-width: 760px;
-      margin: 0 auto 12px;
-      font-size: 14px;
-    }
-
-    .home-link.active {
-      display: block;
-    }
-
-    .home-link button {
-      border: none;
-      background: none;
-      color: #1a73e8;
-      cursor: pointer;
-      padding: 0;
-      font-size: 14px;
-    }
-
-    .home-link button:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 900px) {
-      .category-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 640px) {
-      .site-logo {
-        width: 300px;
-      }
-
-      .search-box input {
-        font-size: 16px;
-      }
-
-      .result-title {
-        font-size: 19px;
-      }
-
-      .category-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+</style>
 </head>
+
 <body>
-  <div class="page">
-    <div class="topbar">
-      <div>社内検索</div>
-    </div>
-
-    <section class="hero" id="heroSection">
-      <div class="hero-inner">
-        <img src="img/logo.png" alt="TECHNOP@L-NET" class="site-logo">
-
-        <div class="subtext">
-          社内PDF・規定・安全資料・業務資料を横断検索<br>
-          キーワード検索でも、AI質問でも使えます。
-        </div>
-
-        <div class="search-shell">
-          <div class="search-box">
-            <div class="search-icon">🔍</div>
-            <input
-              type="text"
-              id="searchInput"
-              placeholder="酒気帯び / 熱中症 / 就業規則 / 事故処分 / LED"
-              autocomplete="off"
-            >
-          </div>
-
-          <div class="search-actions">
-            <button class="action-btn" onclick="searchDocs()">検索</button>
-            <button class="action-btn" onclick="askAI()">AIに質問</button>
-            <button class="action-btn" onclick="toggleCategories()" id="categoryToggleBtn">カテゴリを表示</button>
-          </div>
-
-          <div class="status-note" id="loadingNote">検索データを読み込み中です...</div>
-
-          <div class="category-toggle-wrap">
-            <div class="category-panel" id="categoryPanel">
-              <div class="quick-links">
-                <a class="chip" href="pages/manual.html">工事マニュアル</a>
-                <a class="chip" href="pages/rules.html">社内規定</a>
-                <a class="chip" href="pages/safety.html">安全資料</a>
-                <a class="chip" href="pages/system.html">システム資料</a>
-                <a class="chip" href="pages/it.html">IT資料</a>
-                <a class="chip" href="pages/documents.html">業務資料</a>
-              </div>
-
-              <div class="category-grid">
-                <a class="category-card" href="pages/rules.html">
-                  <h3>社内規定</h3>
-                  <p>就業ルール、申請関係、社内ルールを確認</p>
-                </a>
-
-                <a class="category-card" href="pages/safety.html">
-                  <h3>安全資料</h3>
-                  <p>安全衛生、KY、事故防止、注意事項を確認</p>
-                </a>
-
-                <a class="category-card" href="pages/manual.html">
-                  <h3>工事マニュアル</h3>
-                  <p>IP・LED・TVなど現場マニュアルを確認</p>
-                </a>
-
-                <a class="category-card" href="pages/it.html">
-                  <h3>IT・端末</h3>
-                  <p>スマホ、システム、社内IT利用手順を確認</p>
-                </a>
-
-                <a class="category-card" href="pages/documents.html">
-                  <h3>業務資料</h3>
-                  <p>各種資料、提出書類、参考文書を確認</p>
-                </a>
-
-                <a class="category-card" href="pages/system.html">
-                  <h3>システム資料</h3>
-                  <p>運用フロー、社内システム、管理資料を確認</p>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="home-link" id="homeLink">
-      <button onclick="goHome()">← トップに戻る</button>
-    </div>
-
-    <section class="results-wrap" id="resultsWrap">
-      <div class="ai-panel" id="aiPanel">
-        <div class="ai-title">AI回答</div>
-        <div class="ai-answer" id="aiAnswer"></div>
-      </div>
-
-      <div class="results-header" id="resultsHeader"></div>
-      <div class="results-list" id="resultsBody"></div>
-    </section>
-  </div>
-
-  <script>
-    let searchIndex = [];
-
-    async function loadSearchIndex() {
-      try {
-        const res = await fetch("json/search-index.json");
-        if (!res.ok) {
-          throw new Error("search-index.json の読み込みに失敗しました");
-        }
-
-        const data = await res.json();
-        searchIndex = Array.isArray(data.records) ? data.records : [];
-
-        const loadingNote = document.getElementById("loadingNote");
-        loadingNote.textContent = `検索データ読込完了：${searchIndex.length}件`;
-      } catch (err) {
-        console.error(err);
-        const loadingNote = document.getElementById("loadingNote");
-        loadingNote.textContent = "検索データの読み込みに失敗しました";
-      }
-    }
-
-    function toggleCategories() {
-      const panel = document.getElementById("categoryPanel");
-      const btn = document.getElementById("categoryToggleBtn");
-      const isActive = panel.classList.contains("active");
-
-      if (isActive) {
-        panel.classList.remove("active");
-        btn.textContent = "カテゴリを表示";
-      } else {
-        panel.classList.add("active");
-        btn.textContent = "カテゴリを閉じる";
-      }
-    }
-
-    function normalize(text) {
-      return String(text || "")
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .replace(/　/g, "");
-    }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function buildSearchTarget(item) {
-      return normalize([
-        item.title,
-        item.file,
-        item.path,
-        item.location,
-        item.text,
-        item.type,
-        item.sheet,
-        item.row
-      ].join(" "));
-    }
-
-    function makeSnippet(text, keyword) {
-      const raw = String(text || "");
-      if (!raw) return "";
-
-      const q = String(keyword || "").trim();
-      if (!q) {
-        return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
-      }
-
-      const lowerText = raw.toLowerCase();
-      const lowerQ = q.toLowerCase();
-      const idx = lowerText.indexOf(lowerQ);
-
-      if (idx === -1) {
-        return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
-      }
-
-      const start = Math.max(0, idx - 50);
-      const end = Math.min(raw.length, idx + q.length + 90);
-      let snippet = raw.slice(start, end);
-
-      if (start > 0) snippet = "..." + snippet;
-      if (end < raw.length) snippet = snippet + "...";
-
-      return snippet;
-    }
-
-    function scoreItem(item, input) {
-      const q = normalize(input);
-      const title = normalize(item.title);
-      const location = normalize(item.location);
-      const text = normalize(item.text);
-
-      let score = 0;
-
-      if (title.includes(q)) score += 120;
-      if (location.includes(q)) score += 40;
-      if (text.includes(q)) score += 20;
-
-      const words = input
-        .split(/[\s　]+/)
-        .map(w => normalize(w))
-        .filter(Boolean);
-
-      for (const w of words) {
-        if (title.includes(w)) score += 35;
-        if (location.includes(w)) score += 10;
-        if (text.includes(w)) score += 6;
-      }
-
-      return score;
-    }
-
-    function showResultsLayout() {
-      document.getElementById("heroSection").style.paddingBottom = "12px";
-      document.getElementById("resultsWrap").classList.add("active");
-      document.getElementById("homeLink").classList.add("active");
-    }
-
-    function goHome() {
-      document.getElementById("resultsWrap").classList.remove("active");
-      document.getElementById("homeLink").classList.remove("active");
-      document.getElementById("aiPanel").classList.remove("active");
-      document.getElementById("resultsHeader").innerHTML = "";
-      document.getElementById("resultsBody").innerHTML = "";
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function renderResults(matched, input) {
-      const resultsBody = document.getElementById("resultsBody");
-      const resultsHeader = document.getElementById("resultsHeader");
-
-      resultsHeader.textContent = `${matched.length} 件の結果`;
-
-      if (matched.length === 0) {
-        resultsBody.innerHTML = `
-          <div class="result-item">
-            <div class="result-snippet">
-              該当する資料が見つかりませんでした。<br>
-              例：酒気帯び / 熱中症 / 就業規則 / 事故処分 / LED
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      resultsBody.innerHTML = matched.map(item => {
-        const snippet = escapeHtml(makeSnippet(item.text, input));
-        const pathText = escapeHtml(item.path || "");
-        const titleText = escapeHtml(item.title || "");
-        const fileText = escapeHtml(item.file || "");
-        const locationText = escapeHtml(item.location || "");
-
-        if (item.type === "pdf") {
-          return `
-            <div class="result-item">
-              <div class="result-path">${pathText}</div>
-              <a class="result-title" href="${item.url || "#"}" target="_blank" rel="noopener noreferrer">${titleText}</a>
-              <div class="result-meta">PDF / ${locationText} / ${fileText}</div>
-              <div class="result-snippet">${snippet}</div>
-            </div>
-          `;
-        }
-
-        return `
-          <div class="result-item">
-            <div class="result-path">${pathText}</div>
-            <div class="result-title" style="color:#202124;cursor:default;text-decoration:none;">${titleText}</div>
-            <div class="result-meta">Excel / ${locationText} / ${fileText}</div>
-            <div class="result-snippet">${snippet}</div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function getMatchedItems(input, limit = 30) {
-      const q = normalize(input);
-
-      const words = String(input || "")
-        .split(/[\s　]+/)
-        .map(w => normalize(w))
-        .filter(Boolean);
-
-      return searchIndex
-        .map(item => {
-          const target = buildSearchTarget(item);
-          let matched = false;
-
-          if (q && target.includes(q)) {
-            matched = true;
-          } else if (words.length > 0) {
-            const hitCount = words.filter(w => target.includes(w)).length;
-            matched = hitCount >= 1;
-          }
-
-          if (!matched) return null;
-
-          return {
-            ...item,
-            _score: scoreItem(item, input)
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => b._score - a._score)
-        .slice(0, limit);
-    }
-
-    async function fetchAIAnswer(question, matched) {
-      const contextText = matched.map((item, index) => {
-        return [
-          `資料${index + 1}`,
-          `タイトル: ${item.title || ""}`,
-          `種別: ${item.type || ""}`,
-          `場所: ${item.location || ""}`,
-          `ファイル: ${item.file || ""}`,
-          `本文抜粋: ${String(item.text || "").slice(0, 500)}`
-        ].join("\n");
-      }).join("\n\n");
-
-      const prompt = `
-ユーザー質問:
-${question}
-
-関連資料:
-${contextText}
-
-ルール:
-- 回答は日本語で、分かりやすく簡潔に書く
-- まず結論を書く
-- そのあと必要なら箇条書きで補足する
-- 関連資料に書かれていないことは断定しない
-- 不明な場合は「資料上では確認できません」と書く
-`;
-
-      const response = await fetch("/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          question: prompt
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "AI回答の取得に失敗しました");
-      }
-
-      return data.answer || "回答を取得できませんでした。";
-    }
-
-    function searchDocs() {
-      const input = document.getElementById("searchInput").value.trim();
-      const aiPanel = document.getElementById("aiPanel");
-      aiPanel.classList.remove("active");
-
-      if (!input) {
-        showResultsLayout();
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = `
-          <div class="result-item">
-            <div class="result-snippet">検索キーワードを入力してください。</div>
-          </div>
-        `;
-        return;
-      }
-
-      if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
-        showResultsLayout();
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = `
-          <div class="result-item">
-            <div class="result-snippet">
-              検索データがまだ読み込まれていません。<br>
-              search-index.json の生成や配置を確認してください。
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      const matched = getMatchedItems(input, 30);
-      showResultsLayout();
-      renderResults(matched, input);
-    }
-
-    async function askAI() {
-      const input = document.getElementById("searchInput").value.trim();
-      const aiPanel = document.getElementById("aiPanel");
-      const aiAnswer = document.getElementById("aiAnswer");
-
-      showResultsLayout();
-      aiPanel.classList.add("active");
-
-      if (!input) {
-        aiAnswer.textContent = "質問を入力してください。例：酒気帯びの確認方法は？";
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        return;
-      }
-
-      if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
-        aiAnswer.innerHTML = `
-検索データがまだ読み込まれていません。<br><br>
-先に search-index.json の生成・配置を確認してください。
-        `;
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        return;
-      }
-
-      const matched = getMatchedItems(input, 5);
-
-      if (matched.length === 0) {
-        aiAnswer.innerHTML = `
-該当する資料が見つかりませんでした。<br><br>
-別の言い方で検索してください。<br>
-例：就業規則 / 熱中症 / 酒気帯び / 事故処分
-        `;
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        return;
-      }
-
-      const refs = matched.map(item => {
-        if (item.type === "pdf") {
-          return `・<a href="${item.url || "#"}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || "")}）`;
-        }
-        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || "")}）`;
-      }).join("<br>");
-
-      aiAnswer.innerHTML = `
-AIが回答を作成中です...<br><br>
-関連資料候補:<br><br>
-${refs}
-      `;
-
-      renderResults(getMatchedItems(input, 10), input);
-
-      try {
-        const answer = await fetchAIAnswer(input, matched);
-
-        aiAnswer.innerHTML = `
-<div style="margin-bottom:14px;"><strong>回答</strong></div>
-<div>${escapeHtml(answer).replace(/\n/g, "<br>")}</div>
-<div style="margin-top:18px;"><strong>参考資料</strong></div>
-<div style="margin-top:8px;">${refs}</div>
-        `;
-      } catch (error) {
-        aiAnswer.innerHTML = `
-AI回答の取得でエラーが発生しました。<br><br>
-${escapeHtml(error.message)}<br><br>
-ただし、関連資料は見つかっています。以下を確認してください。<br><br>
-${refs}
-        `;
-      }
-    }
-
-    document.getElementById("searchInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        searchDocs();
-      }
-    });
-
-    loadSearchIndex();
-  </script>
+
+<h1>社内ナレッジAI</h1>
+
+<input id="q" class="searchbox" placeholder="キーワード検索でも、AI質問でも使えます。">
+
+<div class="buttons">
+<button onclick="search()">検索</button>
+<button onclick="askAI()">AIに質問</button>
+</div>
+
+<div class="result">
+
+<div class="card">
+<h3>AI回答</h3>
+<div id="ai-result">ここに回答が表示されます</div>
+</div>
+
+<div class="card">
+<h3>関連資料</h3>
+<div id="links"></div>
+</div>
+
+</div>
+
+<script>
+
+let SEARCH_DATA=[]
+
+fetch("/json/search-index.json")
+.then(res=>res.json())
+.then(data=>{
+SEARCH_DATA=data
+console.log("検索データ読み込み",data.length)
+})
+
+function normalize(text){
+
+return String(text || "")
+.normalize("NFKC")
+.toLowerCase()
+.replace(/[\u30a1-\u30f6]/g,function(ch){
+return String.fromCharCode(ch.charCodeAt(0)-0x60)
+})
+.replace(/\s+/g,"")
+.replace(/　/g,"")
+
+}
+
+function getMatchedItems(query){
+
+const q=normalize(query)
+
+return SEARCH_DATA.filter(item=>{
+
+const t=normalize(item.title)
+const x=normalize(item.text)
+
+return t.includes(q) || x.includes(q)
+
+})
+
+}
+
+function search(){
+
+const q=document.getElementById("q").value
+
+const items=getMatchedItems(q)
+
+const box=document.getElementById("links")
+
+box.innerHTML=""
+
+if(items.length===0){
+
+box.innerHTML="該当資料なし"
+return
+
+}
+
+items.slice(0,10).forEach(item=>{
+
+const a=document.createElement("a")
+
+a.href=item.url
+a.textContent=item.title+" (P"+item.page+")"
+a.target="_blank"
+
+box.appendChild(a)
+box.appendChild(document.createElement("br"))
+
+})
+
+}
+
+async function askAI(){
+
+const q=document.getElementById("q").value
+
+const items=getMatchedItems(q)
+
+if(items.length===0){
+
+document.getElementById("ai-result").innerText="該当する資料が見つかりませんでした。"
+return
+
+}
+
+let context=""
+
+items.slice(0,5).forEach(i=>{
+context+=i.title+"\n"+i.text+"\n\n"
+})
+
+const res=await fetch("/functions/ai",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+question:q,
+context:context
+})
+
+})
+
+const data=await res.json()
+
+document.getElementById("ai-result").innerText=data.answer
+
+}
+
+</script>
+
 </body>
 </html>
-
-これでやったよ？
