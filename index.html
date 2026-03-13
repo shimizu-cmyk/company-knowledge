@@ -349,7 +349,7 @@
 <body>
   <div class="page">
     <div class="topbar">
-      <div>社内検索_TEST123</div>
+      <div>社内検索</div>
     </div>
 
     <section class="hero" id="heroSection">
@@ -626,12 +626,31 @@
     function getMatchedItems(input, limit = 30) {
       const q = normalize(input);
 
+      const words = String(input || "")
+        .split(/[\s　]+/)
+        .map(w => normalize(w))
+        .filter(Boolean);
+
       return searchIndex
-        .filter(item => buildSearchTarget(item).includes(q))
-        .map(item => ({
-          ...item,
-          _score: scoreItem(item, input)
-        }))
+        .map(item => {
+          const target = buildSearchTarget(item);
+          let matched = false;
+
+          if (q && target.includes(q)) {
+            matched = true;
+          } else if (words.length > 0) {
+            const hitCount = words.filter(w => target.includes(w)).length;
+            matched = hitCount >= 1;
+          }
+
+          if (!matched) return null;
+
+          return {
+            ...item,
+            _score: scoreItem(item, input)
+          };
+        })
+        .filter(Boolean)
         .sort((a, b) => b._score - a._score)
         .slice(0, limit);
     }
@@ -799,3 +818,5 @@ ${refs}
   </script>
 </body>
 </html>
+
+これでやったよ？
