@@ -1,18 +1,23 @@
 async function askAI(question){
 
+question = question.replace(/[ァ-ン]/g, s =>
+String.fromCharCode(s.charCodeAt(0) - 0x60)
+)
+
 const res = await fetch("/json/search-index.json")
 const data = await res.json()
 
 let context = ""
 
 data.forEach(item=>{
-if(
-item.title.includes(question) ||
-item.text.includes(question)
-){
+
+const text = (item.title + item.text).toLowerCase()
+
+if(text.includes(question.toLowerCase())){
 context += item.title + "\n"
 context += item.text + "\n\n"
 }
+
 })
 
 if(context === ""){
