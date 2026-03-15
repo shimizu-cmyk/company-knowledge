@@ -1,18 +1,55 @@
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders()
+  });
+}
+
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    const body = await request.json();
-    const question = body.question || "";
 
-    if (!question.trim()) {
-      return new Response(
-        JSON.stringify({ error: "質問が空です" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json; charset=utf-8" }
-        }
+    if (!env.GROQ_API_KEY) {
+      return jsonResponse(
+        { error: "GROQ_API_KEY が設定されていません" },
+        500
       );
     }
+
+    let body = {};
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse(
+        { error: "リクエストJSONの形式が不正です" },
+        400
+      );
+    }
+
+    const question = String(body.question || "").trim();
+
+    if (!question) {
+      return jsonResponse(
+        { error: "質問が空です" },
+        400
+      );
+    }
+
+    const groqPayload = {
+      model: "llama-3.1-8b-instant",
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          content:
+            "あなたは社内ナレッジAIです。日本語で、簡潔で分かりやすく回答してください。資料にないことは断定せず、『資料上では確認できません』と明記してください。"
+        },
+        {
+          role: "user",
+          content: question
+        }
+      ]
+    };
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -20,58 +57,64 @@ export async function onRequestPost(context) {
         "Authorization": `Bearer ${env.GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          {
-            role: "system",
-            content: "あなたは社内ナレッジAIです。質問に対して、簡潔で分かりやすい日本語で回答してください。分からない場合は、分からないと正直に答えてください。"
-          },
-          {
-            role: "user",
-            content: question
-          }
-        ],
-        temperature: 0.2
-      })
+      body: JSON.stringify(groqPayload)
     });
 
-    const groqData = await groqRes.json();
+    const rawText = await groqRes.text();
+
+    let groqData = {};
+    try {
+      groqData = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      return jsonResponse(
+        {
+          error: "Groqの応答JSONが不正です",
+          detail: rawText.slice(0, 500)
+        },
+        502
+      );
+    }
 
     if (!groqRes.ok) {
-      return new Response(
-        JSON.stringify({
+      return jsonResponse(
+        {
           error: "Groq APIエラー",
           detail: groqData
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json; charset=utf-8" }
-        }
+        },
+        502
       );
     }
 
     const answer =
-      groqData?.choices?.[0]?.message?.content ||
+      groqData?.choices?.[0]?.message?.content?.trim() ||
       "回答を取得できませんでした。";
 
-    return new Response(
-      JSON.stringify({ answer }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json; charset=utf-8" }
-      }
-    );
+    return jsonResponse({ answer }, 200);
   } catch (error) {
-    return new Response(
-      JSON.stringify({
+    return jsonResponse(
+      {
         error: "サーバーエラー",
         detail: String(error)
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json; charset=utf-8" }
-      }
+      },
+      500
     );
   }
+}
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...corsHeaders()
+    }
+  });
+}
+
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
 }
