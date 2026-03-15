@@ -44,12 +44,42 @@
       align-items: center;
       justify-content: center;
       padding: 20px 16px 40px;
+      transition: all 0.25s ease;
+    }
+
+    .hero.compact {
+      display: block;
+      padding: 16px 16px 8px;
+      border-bottom: 1px solid #f1f3f4;
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 50;
     }
 
     .hero-inner {
       width: 100%;
       max-width: 860px;
       text-align: center;
+      margin: 0 auto;
+    }
+
+    .hero.compact .hero-inner {
+      max-width: 1100px;
+      text-align: left;
+    }
+
+    .hero-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .hero.compact .hero-top-row {
+      justify-content: flex-start;
+      gap: 14px;
     }
 
     .site-logo {
@@ -58,6 +88,13 @@
       width: 520px;
       height: auto;
       margin: 0 auto 18px;
+      transition: all 0.25s ease;
+    }
+
+    .hero.compact .site-logo {
+      width: 180px;
+      margin: 0;
+      flex: 0 0 auto;
     }
 
     .subtext {
@@ -65,12 +102,25 @@
       color: #5f6368;
       margin: 0 0 28px;
       line-height: 1.8;
+      transition: all 0.2s ease;
+    }
+
+    .hero.compact .subtext {
+      display: none;
     }
 
     .search-shell {
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
+      transition: all 0.25s ease;
+    }
+
+    .hero.compact .search-shell {
+      max-width: none;
+      width: 100%;
+      margin: 0;
+      flex: 1 1 auto;
     }
 
     .search-box {
@@ -91,6 +141,10 @@
       border-color: rgba(223,225,229,0);
     }
 
+    .hero.compact .search-box {
+      min-height: 54px;
+    }
+
     .search-icon {
       font-size: 18px;
       color: #9aa0a6;
@@ -107,12 +161,23 @@
       min-width: 0;
     }
 
+    .hero.compact .search-box input {
+      font-size: 16px;
+    }
+
     .search-actions {
       display: flex;
       gap: 10px;
       justify-content: center;
       margin-top: 24px;
       flex-wrap: wrap;
+      transition: all 0.25s ease;
+    }
+
+    .hero.compact .search-actions {
+      justify-content: flex-start;
+      margin-top: 10px;
+      margin-left: 194px;
     }
 
     .action-btn {
@@ -135,10 +200,22 @@
       margin-top: 18px;
       font-size: 13px;
       color: #5f6368;
+      transition: all 0.25s ease;
+    }
+
+    .hero.compact .status-note {
+      margin-top: 10px;
+      margin-left: 194px;
+      text-align: left;
     }
 
     .category-toggle-wrap {
       margin-top: 20px;
+    }
+
+    .hero.compact .category-toggle-wrap {
+      margin-top: 10px;
+      margin-left: 194px;
     }
 
     .category-panel {
@@ -156,6 +233,10 @@
       justify-content: center;
       flex-wrap: wrap;
       margin-bottom: 14px;
+    }
+
+    .hero.compact .quick-links {
+      justify-content: flex-start;
     }
 
     .chip {
@@ -211,11 +292,65 @@
       width: 100%;
       max-width: 980px;
       margin: 0 auto;
-      padding: 10px 16px 48px;
+      padding: 16px 16px 48px;
     }
 
     .results-wrap.active {
       display: block;
+    }
+
+    .conversation-wrap {
+      max-width: 760px;
+      margin: 0 auto 18px;
+    }
+
+    .message-row {
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .user-bubble {
+      max-width: min(78%, 620px);
+      background: #1a73e8;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 18px 18px 4px 18px;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 2px 8px rgba(26,115,232,.18);
+    }
+
+    .ai-panel {
+      display: none;
+      max-width: 760px;
+      margin: 0 auto 24px;
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .ai-panel.active {
+      display: block;
+    }
+
+    .ai-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #1f2937;
+    }
+
+    .ai-answer {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #374151;
     }
 
     .results-header {
@@ -270,33 +405,6 @@
       word-break: break-word;
     }
 
-    .ai-panel {
-      display: none;
-      max-width: 760px;
-      margin: 0 auto 32px;
-      background: #f8f9fa;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 18px;
-    }
-
-    .ai-panel.active {
-      display: block;
-    }
-
-    .ai-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #1f2937;
-    }
-
-    .ai-answer {
-      font-size: 14px;
-      line-height: 1.8;
-      color: #374151;
-    }
-
     .home-link {
       display: none;
       max-width: 760px;
@@ -325,11 +433,25 @@
       .category-grid {
         grid-template-columns: repeat(2, 1fr);
       }
+
+      .hero.compact .search-actions,
+      .hero.compact .status-note,
+      .hero.compact .category-toggle-wrap {
+        margin-left: 0;
+      }
+
+      .hero.compact .hero-top-row {
+        align-items: stretch;
+      }
     }
 
     @media (max-width: 640px) {
       .site-logo {
         width: 300px;
+      }
+
+      .hero.compact .site-logo {
+        width: 140px;
       }
 
       .search-box input {
@@ -343,6 +465,18 @@
       .category-grid {
         grid-template-columns: 1fr;
       }
+
+      .hero.compact .hero-top-row {
+        display: block;
+      }
+
+      .hero.compact .search-shell {
+        margin-top: 10px;
+      }
+
+      .user-bubble {
+        max-width: 88%;
+      }
     }
   </style>
 </head>
@@ -354,73 +488,75 @@
 
     <section class="hero" id="heroSection">
       <div class="hero-inner">
-        <img src="img/logo.png" alt="TECHNOP@L-NET" class="site-logo">
+        <div class="hero-top-row">
+          <img src="img/logo.png" alt="TECHNOP@L-NET" class="site-logo">
 
-        <div class="subtext">
-          社内PDF・規定・安全資料・業務資料を横断検索<br>
-          キーワード検索でも、AI質問でも使えます。
-        </div>
+          <div class="search-shell">
+            <div class="subtext" id="heroSubtext">
+              社内PDF・規定・安全資料・業務資料を横断検索<br>
+              キーワード検索でも、AI質問でも使えます。
+            </div>
 
-        <div class="search-shell">
-          <div class="search-box">
-            <div class="search-icon">🔍</div>
-            <input
-              type="text"
-              id="searchInput"
-              placeholder="酒気帯び / 熱中症 / 就業規則 / 事故処分 / LED"
-              autocomplete="off"
-            >
-          </div>
+            <div class="search-box">
+              <div class="search-icon">🔍</div>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="酒気帯び / 熱中症 / 就業規則 / 事故処分 / LED"
+                autocomplete="off"
+              >
+            </div>
 
-          <div class="search-actions">
-            <button class="action-btn" onclick="searchDocs()">検索</button>
-            <button class="action-btn" onclick="askAI()">AIに質問</button>
-            <button class="action-btn" onclick="toggleCategories()" id="categoryToggleBtn">カテゴリを表示</button>
-          </div>
+            <div class="search-actions">
+              <button class="action-btn" onclick="searchDocs()">検索</button>
+              <button class="action-btn" onclick="askAI()">AIに質問</button>
+              <button class="action-btn" onclick="toggleCategories()" id="categoryToggleBtn">カテゴリを表示</button>
+            </div>
 
-          <div class="status-note" id="loadingNote">検索データを読み込み中です...</div>
+            <div class="status-note" id="loadingNote">検索データを読み込み中です...</div>
 
-          <div class="category-toggle-wrap">
-            <div class="category-panel" id="categoryPanel">
-              <div class="quick-links">
-                <a class="chip" href="pages/manual.html">工事マニュアル</a>
-                <a class="chip" href="pages/rules.html">社内規定</a>
-                <a class="chip" href="pages/safety.html">安全資料</a>
-                <a class="chip" href="pages/system.html">システム資料</a>
-                <a class="chip" href="pages/it.html">IT資料</a>
-                <a class="chip" href="pages/documents.html">業務資料</a>
-              </div>
+            <div class="category-toggle-wrap">
+              <div class="category-panel" id="categoryPanel">
+                <div class="quick-links">
+                  <a class="chip" href="pages/manual.html">工事マニュアル</a>
+                  <a class="chip" href="pages/rules.html">社内規定</a>
+                  <a class="chip" href="pages/safety.html">安全資料</a>
+                  <a class="chip" href="pages/system.html">システム資料</a>
+                  <a class="chip" href="pages/it.html">IT資料</a>
+                  <a class="chip" href="pages/documents.html">業務資料</a>
+                </div>
 
-              <div class="category-grid">
-                <a class="category-card" href="pages/rules.html">
-                  <h3>社内規定</h3>
-                  <p>就業ルール、申請関係、社内ルールを確認</p>
-                </a>
+                <div class="category-grid">
+                  <a class="category-card" href="pages/rules.html">
+                    <h3>社内規定</h3>
+                    <p>就業ルール、申請関係、社内ルールを確認</p>
+                  </a>
 
-                <a class="category-card" href="pages/safety.html">
-                  <h3>安全資料</h3>
-                  <p>安全衛生、KY、事故防止、注意事項を確認</p>
-                </a>
+                  <a class="category-card" href="pages/safety.html">
+                    <h3>安全資料</h3>
+                    <p>安全衛生、KY、事故防止、注意事項を確認</p>
+                  </a>
 
-                <a class="category-card" href="pages/manual.html">
-                  <h3>工事マニュアル</h3>
-                  <p>IP・LED・TVなど現場マニュアルを確認</p>
-                </a>
+                  <a class="category-card" href="pages/manual.html">
+                    <h3>工事マニュアル</h3>
+                    <p>IP・LED・TVなど現場マニュアルを確認</p>
+                  </a>
 
-                <a class="category-card" href="pages/it.html">
-                  <h3>IT・端末</h3>
-                  <p>スマホ、システム、社内IT利用手順を確認</p>
-                </a>
+                  <a class="category-card" href="pages/it.html">
+                    <h3>IT・端末</h3>
+                    <p>スマホ、システム、社内IT利用手順を確認</p>
+                  </a>
 
-                <a class="category-card" href="pages/documents.html">
-                  <h3>業務資料</h3>
-                  <p>各種資料、提出書類、参考文書を確認</p>
-                </a>
+                  <a class="category-card" href="pages/documents.html">
+                    <h3>業務資料</h3>
+                    <p>各種資料、提出書類、参考文書を確認</p>
+                  </a>
 
-                <a class="category-card" href="pages/system.html">
-                  <h3>システム資料</h3>
-                  <p>運用フロー、社内システム、管理資料を確認</p>
-                </a>
+                  <a class="category-card" href="pages/system.html">
+                    <h3>システム資料</h3>
+                    <p>運用フロー、社内システム、管理資料を確認</p>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -433,6 +569,8 @@
     </div>
 
     <section class="results-wrap" id="resultsWrap">
+      <div class="conversation-wrap" id="conversationWrap"></div>
+
       <div class="ai-panel" id="aiPanel">
         <div class="ai-title">AI回答</div>
         <div class="ai-answer" id="aiAnswer"></div>
@@ -566,18 +704,38 @@
     }
 
     function showResultsLayout() {
-      document.getElementById("heroSection").style.paddingBottom = "12px";
+      document.getElementById("heroSection").classList.add("compact");
       document.getElementById("resultsWrap").classList.add("active");
       document.getElementById("homeLink").classList.add("active");
     }
 
     function goHome() {
+      document.getElementById("heroSection").classList.remove("compact");
       document.getElementById("resultsWrap").classList.remove("active");
       document.getElementById("homeLink").classList.remove("active");
       document.getElementById("aiPanel").classList.remove("active");
       document.getElementById("resultsHeader").innerHTML = "";
       document.getElementById("resultsBody").innerHTML = "";
+      document.getElementById("conversationWrap").innerHTML = "";
       window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function appendUserBubble(text) {
+      const wrap = document.getElementById("conversationWrap");
+      wrap.innerHTML = `
+        <div class="message-row user">
+          <div class="user-bubble">${escapeHtml(text)}</div>
+        </div>
+      `;
+    }
+
+    function scrollToConversation() {
+      const target = document.getElementById("conversationWrap");
+      if (target) {
+        setTimeout(() => {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+      }
     }
 
     function renderResults(matched, input) {
@@ -718,17 +876,20 @@ ${contextText}
 
       if (!input) {
         showResultsLayout();
+        appendUserBubble("検索キーワードを入力してください");
         document.getElementById("resultsHeader").textContent = "";
         document.getElementById("resultsBody").innerHTML = `
           <div class="result-item">
             <div class="result-snippet">検索キーワードを入力してください。</div>
           </div>
         `;
+        scrollToConversation();
         return;
       }
 
       if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
         showResultsLayout();
+        appendUserBubble(input);
         document.getElementById("resultsHeader").textContent = "";
         document.getElementById("resultsBody").innerHTML = `
           <div class="result-item">
@@ -738,12 +899,15 @@ ${contextText}
             </div>
           </div>
         `;
+        scrollToConversation();
         return;
       }
 
       const matched = getMatchedItems(input, 30);
       showResultsLayout();
+      appendUserBubble(input);
       renderResults(matched, input);
+      scrollToConversation();
     }
 
     async function askAI() {
@@ -752,7 +916,9 @@ ${contextText}
       const aiAnswer = document.getElementById("aiAnswer");
 
       showResultsLayout();
+      appendUserBubble(input || "質問を入力してください");
       aiPanel.classList.add("active");
+      scrollToConversation();
 
       if (!input) {
         aiAnswer.textContent = "質問を入力してください。例：酒気帯びの確認方法は？";
@@ -828,5 +994,3 @@ ${refs}
   </script>
 </body>
 </html>
-
-これで修正したよ？
