@@ -317,6 +317,10 @@
       justify-content: flex-end;
     }
 
+    .message-row.assistant {
+      justify-content: flex-start;
+    }
+
     .user-bubble {
       max-width: min(78%, 620px);
       background: #1a73e8;
@@ -330,31 +334,49 @@
       box-shadow: 0 2px 8px rgba(26,115,232,.18);
     }
 
-    .ai-panel {
-      display: none;
-      max-width: 760px;
-      margin: 0 auto 24px;
+    .assistant-card {
+      max-width: min(82%, 700px);
       background: #f8f9fa;
+      color: #374151;
+      padding: 14px 16px;
+      border-radius: 18px 18px 18px 4px;
+      font-size: 14px;
+      line-height: 1.8;
       border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 18px;
+      word-break: break-word;
     }
 
-    .ai-panel.active {
+    .assistant-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #5f6368;
+      margin-bottom: 6px;
+    }
+
+    .ref-toggle {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #1a73e8;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .ref-box {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .ref-box.active {
       display: block;
     }
 
-    .ai-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #1f2937;
-    }
-
-    .ai-answer {
-      font-size: 14px;
-      line-height: 1.8;
-      color: #374151;
+    .ai-panel {
+      display: none;
     }
 
     .results-header {
@@ -508,7 +530,8 @@
         grid-template-columns: 1fr;
       }
 
-      .user-bubble {
+      .user-bubble,
+      .assistant-card {
         max-width: 88%;
       }
 
@@ -617,11 +640,6 @@
 
     <section class="results-wrap" id="resultsWrap">
       <div class="conversation-wrap" id="conversationWrap"></div>
-
-      <div class="ai-panel" id="aiPanel">
-        <div class="ai-title">AI回答</div>
-        <div class="ai-answer" id="aiAnswer"></div>
-      </div>
 
       <div class="results-header" id="resultsHeader"></div>
       <div class="results-list" id="resultsBody"></div>
@@ -788,13 +806,11 @@
       document.getElementById("heroSection").classList.remove("compact");
       document.getElementById("resultsWrap").classList.remove("active");
       document.getElementById("homeLink").classList.remove("active");
-      document.getElementById("aiPanel").classList.remove("active");
       document.getElementById("chatbar").classList.remove("active");
       document.getElementById("pageRoot").classList.remove("with-chatbar");
       document.getElementById("resultsHeader").innerHTML = "";
       document.getElementById("resultsBody").innerHTML = "";
       document.getElementById("conversationWrap").innerHTML = "";
-      document.getElementById("aiAnswer").innerHTML = "";
       syncTopInput("");
       syncBottomInput("");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -802,7 +818,8 @@
 
     function renderConversation() {
       const wrap = document.getElementById("conversationWrap");
-      wrap.innerHTML = conversationHistory.map(item => {
+
+      wrap.innerHTML = conversationHistory.map((item, index) => {
         if (item.role === "user") {
           return `
             <div class="message-row user">
@@ -810,8 +827,41 @@
             </div>
           `;
         }
+
+        if (item.role === "assistant") {
+          const refsHtml = item.refs || "";
+          const refCount = item.refCount || 0;
+
+          return `
+            <div class="message-row assistant">
+              <div class="assistant-card">
+                <div class="assistant-label">AI回答</div>
+                <div>${escapeHtml(item.content).replace(/\n/g, "<br>")}</div>
+                ${
+                  refCount > 0
+                    ? `
+                      <div class="ref-toggle" onclick="toggleRefs(${index})">
+                        参考資料 ${refCount}件を表示 / 非表示
+                      </div>
+                      <div class="ref-box" id="ref-box-${index}">
+                        ${refsHtml}
+                      </div>
+                    `
+                    : ""
+                }
+              </div>
+            </div>
+          `;
+        }
+
         return "";
       }).join("");
+    }
+
+    function toggleRefs(index) {
+      const el = document.getElementById(`ref-box-${index}`);
+      if (!el) return;
+      el.classList.toggle("active");
     }
 
     function appendUserMessage(text) {
@@ -822,16 +872,23 @@
       renderConversation();
     }
 
+    function appendAssistantMessage(text, refsHtml, refCount) {
+      conversationHistory.push({
+        role: "assistant",
+        content: text,
+        refs: refsHtml || "",
+        refCount: refCount || 0
+      });
+      renderConversation();
+    }
+
     function scrollToLatest() {
-      const wrap = document.getElementById("conversationWrap");
-      if (wrap) {
-        setTimeout(() => {
-          window.scrollTo({
-            top: document.body.scrollHeight,
-            behavior: "smooth"
-          });
-        }, 80);
-      }
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth"
+        });
+      }, 80);
     }
 
     function renderResults(matched, input) {
@@ -915,7 +972,7 @@
 
     async function fetchAIAnswer(question, matched) {
       const historyText = conversationHistory
-        .slice(-6)
+        .slice(-10)
         .map(item => `${item.role === "user" ? "ユーザー" : "AI"}: ${item.content}`)
         .join("\n");
 
@@ -995,9 +1052,6 @@ ${contextText}
 
     function searchDocs(forcedInput) {
       const input = typeof forcedInput === "string" ? forcedInput.trim() : getTopInputValue();
-      const aiPanel = document.getElementById("aiPanel");
-      aiPanel.classList.remove("active");
-      document.getElementById("aiAnswer").innerHTML = "";
 
       if (!input) {
         showResultsLayout();
@@ -1030,7 +1084,7 @@ ${contextText}
         return;
       }
 
-      const matched = getMatchedItems(input, 30);
+      const matched = getMatchedItems(input, 9999);
       showResultsLayout();
       appendUserMessage(input);
       renderResults(matched, input);
@@ -1040,18 +1094,15 @@ ${contextText}
 
     async function askAI(forcedInput) {
       const input = typeof forcedInput === "string" ? forcedInput.trim() : getTopInputValue();
-      const aiPanel = document.getElementById("aiPanel");
-      const aiAnswer = document.getElementById("aiAnswer");
 
       showResultsLayout();
-      aiPanel.classList.add("active");
 
       if (!input) {
         appendUserMessage("質問を入力してください");
-        aiAnswer.textContent = "質問を入力してください。例：酒気帯びの確認方法は？";
+        syncBottomInput("");
         document.getElementById("resultsHeader").textContent = "";
         document.getElementById("resultsBody").innerHTML = "";
-        syncBottomInput("");
+        appendAssistantMessage("質問を入力してください。例：酒気帯びの確認方法は？", "", 0);
         scrollToLatest();
         return;
       }
@@ -1061,25 +1112,20 @@ ${contextText}
       scrollToLatest();
 
       if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
-        aiAnswer.innerHTML = `
-検索データがまだ読み込まれていません。<br><br>
-先に search-index.json の生成・配置を確認してください。
-        `;
         document.getElementById("resultsHeader").textContent = "";
         document.getElementById("resultsBody").innerHTML = "";
+        appendAssistantMessage("検索データがまだ読み込まれていません。先に search-index.json の生成・配置を確認してください。", "", 0);
+        scrollToLatest();
         return;
       }
 
-      const matched = getMatchedItems(input, 5);
+      const matched = getMatchedItems(input, 9999);
 
       if (matched.length === 0) {
-        aiAnswer.innerHTML = `
-該当する資料が見つかりませんでした。<br><br>
-別の言い方で検索してください。<br>
-例：就業規則 / 熱中症 / 酒気帯び / 事故処分
-        `;
         document.getElementById("resultsHeader").textContent = "";
         document.getElementById("resultsBody").innerHTML = "";
+        appendAssistantMessage("該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分", "", 0);
+        scrollToLatest();
         return;
       }
 
@@ -1090,36 +1136,21 @@ ${contextText}
         return `・${escapeHtml(item.title)}（${escapeHtml(item.location || "")}）`;
       }).join("<br>");
 
-      aiAnswer.innerHTML = `
-AIが回答を作成中です...<br><br>
-関連資料候補:<br><br>
-${refs}
-      `;
-
-      renderResults(getMatchedItems(input, 10), input);
+      document.getElementById("resultsHeader").textContent = "";
+      document.getElementById("resultsBody").innerHTML = "";
 
       try {
-        const answer = await fetchAIAnswer(input, matched);
-
-        conversationHistory.push({
-          role: "assistant",
-          content: answer
-        });
-
-        aiAnswer.innerHTML = `
-<div style="margin-bottom:14px;"><strong>回答</strong></div>
-<div>${escapeHtml(answer).replace(/\n/g, "<br>")}</div>
-<div style="margin-top:18px;"><strong>参考資料</strong></div>
-<div style="margin-top:8px;">${refs}</div>
-        `;
+        const answer = await fetchAIAnswer(input, matched.slice(0, 5));
+        appendAssistantMessage(answer, refs, matched.length);
       } catch (error) {
-        aiAnswer.innerHTML = `
-AI回答の取得でエラーが発生しました。<br><br>
-${escapeHtml(error.message)}<br><br>
-ただし、関連資料は見つかっています。以下を確認してください。<br><br>
-${refs}
-        `;
+        appendAssistantMessage(
+          `AI回答の取得でエラーが発生しました。\n${error.message}\nただし、関連資料は見つかっています。`,
+          refs,
+          matched.length
+        );
       }
+
+      scrollToLatest();
     }
 
     document.getElementById("searchInput").addEventListener("keydown", function(e) {
