@@ -1,147 +1,116 @@
-export async function onRequestOptions() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders()
-  });
-}
-
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
 
+    const body = await request.json();
+    const question = body.question || "";
+    const sources = Array.isArray(body.sources) ? body.sources : [];
+
     if (!env.GROQ_API_KEY) {
       return jsonResponse(
-        { error: "GROQ_API_KEY が設定されていません" },
+        { error: "GROQ_API_KEY が未設定です" },
         500
       );
     }
 
-    let body = {};
-    try {
-      body = await request.json();
-    } catch {
-      return jsonResponse(
-        { error: "リクエストJSONの形式が不正です" },
-        400
-      );
-    }
-
-    const question = String(body.question || "").trim();
-
-    if (!question) {
+    if (!question.trim()) {
       return jsonResponse(
         { error: "質問が空です" },
         400
       );
     }
 
-    const indexUrl = new URL("/json/search-index.json", request.url);
-    const indexRes = await fetch(indexUrl.toString(), {
-      method: "GET",
-      headers: {
-        "Accept": "application/json"
-      }
-    });
+    const sourceText = sources.map((s, i) => {
+      return [
+        `資料番号: ${i + 1}`,
+        `タイトル: ${s.title || ""}`,
+        `ページ: ${s.page || ""}`,
+        `場所: ${s.location || ""}`,
+        `URL: ${s.url || ""}`,
+        `本文: ${String(s.text || "").slice(0, 1200)}`
+      ].join("\n");
+    }).join("\n\n--------------------\n\n");
 
-    if (!indexRes.ok) {
-      return jsonResponse(
-        {
-          error: "search-index.json の読み込みに失敗しました",
-          detail: `status: ${indexRes.status}`
-        },
-        500
-      );
-    }
+    const systemPrompt = `
+あなたは社内ナレッジAIです。
+必ず日本語で回答してください。
+以下のルールを厳守してください。
 
-    const rawText = await indexRes.text();
+ルール:
+- 回答は簡潔でわかりやすくする
+- まず結論を書く
+- 必要ならそのあとに箇条書きで補足する
+- 与えられた資料に書かれていないことは断定しない
+- 不明な場合は「資料上では確認できません」と書く
+- 回答の根拠になった資料番号とページ番号を citations に入れる
+- citations は必ず配列にする
+- citations の各要素は {"index": 資料番号, "page": ページ番号} の形にする
+- 根拠がない場合は citations を空配列にする
+- 出力は必ずJSONのみ
+- JSON形式は以下:
+{
+  "answer": "回答本文",
+  "citations": [
+    { "index": 1, "page": 3 },
+    { "index": 2, "page": 1 }
+  ]
+}
+`.trim();
 
-    let parsed;
-    try {
-      parsed = rawText ? JSON.parse(rawText) : null;
-    } catch {
-      return jsonResponse(
-        {
-          error: "search-index.json のJSON解析に失敗しました",
-          detail: rawText.slice(0, 500)
-        },
-        500
-      );
-    }
+    const userPrompt = `
+ユーザー質問:
+${question}
 
-    const searchIndex = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray(parsed?.records)
-        ? parsed.records
-        : null;
-
-    if (!searchIndex) {
-      return jsonResponse(
-        { error: "search-index.json の形式が不正です" },
-        500
-      );
-    }
-
-    const groqPayload = {
-      model: "llama-3.1-8b-instant",
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content:
-            "あなたは社内ナレッジAIです。日本語で、簡潔で分かりやすく回答してください。資料にないことは断定せず、『資料上では確認できません』と明記してください。"
-        },
-        {
-          role: "user",
-          content: question
-        }
-      ]
-    };
+参考資料:
+${sourceText}
+`.trim();
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${env.GROQ_API_KEY}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.GROQ_API_KEY}`
       },
-      body: JSON.stringify(groqPayload)
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        response_format: { type: "json_object" }
+      })
     });
 
-    const groqRawText = await groqRes.text();
-
-    let groqData = {};
-    try {
-      groqData = groqRawText ? JSON.parse(groqRawText) : {};
-    } catch {
-      return jsonResponse(
-        {
-          error: "Groqの応答JSONが不正です",
-          detail: groqRawText.slice(0, 500)
-        },
-        502
-      );
-    }
+    const groqData = await groqRes.json();
 
     if (!groqRes.ok) {
       return jsonResponse(
-        {
-          error: "Groq APIエラー",
-          detail: groqData
-        },
-        502
+        { error: groqData?.error?.message || "Groq APIエラー" },
+        500
       );
     }
 
-    const answer =
-      groqData?.choices?.[0]?.message?.content?.trim() ||
-      "回答を取得できませんでした。";
+    const content = groqData?.choices?.[0]?.message?.content || "{}";
 
-    return jsonResponse({ answer }, 200);
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      return jsonResponse(
+        { error: "AI応答JSONの解析に失敗しました" },
+        500
+      );
+    }
+
+    return jsonResponse({
+      answer: parsed.answer || "回答を取得できませんでした。",
+      citations: Array.isArray(parsed.citations) ? parsed.citations : []
+    });
+
   } catch (error) {
     return jsonResponse(
-      {
-        error: "サーバーエラー",
-        detail: String(error)
-      },
+      { error: error.message || "サーバーエラー" },
       500
     );
   }
@@ -151,16 +120,7 @@ function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      ...corsHeaders()
+      "Content-Type": "application/json; charset=UTF-8"
     }
   });
-}
-
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
-  };
 }
