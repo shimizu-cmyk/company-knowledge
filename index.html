@@ -375,10 +375,6 @@
       display: block;
     }
 
-    .ai-panel {
-      display: none;
-    }
-
     .results-header {
       max-width: 760px;
       margin: 0 auto 2px;
@@ -668,13 +664,17 @@
 
     async function loadSearchIndex() {
       try {
-        const res = await fetch("json/search-index.json");
+        const res = await fetch("/json/search-index.json");
         if (!res.ok) {
           throw new Error("search-index.json の読み込みに失敗しました");
         }
 
         const data = await res.json();
-        searchIndex = Array.isArray(data.records) ? data.records : [];
+        searchIndex = Array.isArray(data)
+          ? data
+          : Array.isArray(data.records)
+            ? data.records
+            : [];
 
         const loadingNote = document.getElementById("loadingNote");
         loadingNote.textContent = `検索データ読込完了：${searchIndex.length}件`;
@@ -971,47 +971,22 @@
     }
 
     async function fetchAIAnswer(question, matched) {
-      const historyText = conversationHistory
+      const history = conversationHistory
         .slice(-10)
-        .map(item => `${item.role === "user" ? "ユーザー" : "AI"}: ${item.content}`)
-        .join("\n");
+        .map(item => ({
+          role: item.role,
+          content: item.content
+        }));
 
-      const contextText = matched.map((item, index) => {
-        return [
-          `資料${index + 1}`,
-          `タイトル: ${item.title || ""}`,
-          `種別: ${item.type || ""}`,
-          `場所: ${item.location || ""}`,
-          `ファイル: ${item.file || ""}`,
-          `本文抜粋: ${String(item.text || "").slice(0, 500)}`
-        ].join("\n");
-      }).join("\n\n");
-
-      const prompt = `
-会話履歴:
-${historyText}
-
-ユーザー質問:
-${question}
-
-関連資料:
-${contextText}
-
-ルール:
-- 回答は日本語で、分かりやすく簡潔に書く
-- まず結論を書く
-- そのあと必要なら箇条書きで補足する
-- 関連資料に書かれていないことは断定しない
-- 不明な場合は「資料上では確認できません」と書く
-`;
-
-      const response = await fetch("/chat", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          question: prompt
+          question,
+          history,
+          matched
         })
       });
 
@@ -1027,7 +1002,7 @@ ${contextText}
         throw new Error(data.error || "AI回答の取得に失敗しました");
       }
 
-      return data.answer || "回答を取得できませんでした。";
+      return data;
     }
 
     function getTopInputValue() {
@@ -1121,14 +1096,6 @@ ${contextText}
 
       const matched = getMatchedItems(input, 9999);
 
-      if (matched.length === 0) {
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        appendAssistantMessage("該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分", "", 0);
-        scrollToLatest();
-        return;
-      }
-
       const refs = matched.map(item => {
         if (item.type === "pdf") {
           return `・<a href="${item.url || "#"}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || "")}）`;
@@ -1140,8 +1107,18 @@ ${contextText}
       document.getElementById("resultsBody").innerHTML = "";
 
       try {
-        const answer = await fetchAIAnswer(input, matched.slice(0, 5));
-        appendAssistantMessage(answer, refs, matched.length);
+        const data = await fetchAIAnswer(input, matched.slice(0, 5));
+        const answer = data.answer || "回答を取得できませんでした。";
+
+        const responseRefs = Array.isArray(data.references) && data.references.length > 0
+          ? data.references.map(ref => {
+              return `・<a href="${ref.url || "#"}" target="_blank" rel="noopener noreferrer">${escapeHtml(ref.title || "無題")}</a>${ref.category ? `（${escapeHtml(ref.category)}）` : ""}`;
+            }).join("<br>")
+          : refs;
+
+        const refCount = Array.isArray(data.references) ? data.references.length : matched.length;
+
+        appendAssistantMessage(answer, responseRefs, refCount);
       } catch (error) {
         appendAssistantMessage(
           `AI回答の取得でエラーが発生しました。\n${error.message}\nただし、関連資料は見つかっています。`,
