@@ -7,13 +7,8 @@
   <meta name="description" content="社内PDF・規定・安全資料を検索できる社内ナレッジAI">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      height: 100%;
-    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
 
     body {
       margin: 0;
@@ -23,9 +18,7 @@
       min-height: 100vh;
     }
 
-    a {
-      color: inherit;
-    }
+    a { color: inherit; }
 
     .page {
       min-height: 100vh;
@@ -356,7 +349,7 @@
     .citation-box {
       margin-top: 10px;
       padding: 10px 12px;
-      background: #ffffff;
+      background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       font-size: 13px;
@@ -398,10 +391,6 @@
 
     .ref-box.active {
       display: block;
-    }
-
-    .ai-panel {
-      display: none;
     }
 
     .results-header {
@@ -539,39 +528,14 @@
     }
 
     @media (max-width: 640px) {
-      .site-logo {
-        width: 300px;
-      }
-
-      .hero.compact .site-logo {
-        width: 130px;
-      }
-
-      .result-title {
-        font-size: 19px;
-      }
-
-      .category-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .user-bubble,
-      .assistant-card {
-        max-width: 88%;
-      }
-
-      .chatbar-inner {
-        flex-wrap: wrap;
-      }
-
-      .chatbar-actions {
-        width: 100%;
-      }
-
-      .chatbar-search,
-      .chatbar-ai {
-        flex: 1;
-      }
+      .site-logo { width: 300px; }
+      .hero.compact .site-logo { width: 130px; }
+      .result-title { font-size: 19px; }
+      .category-grid { grid-template-columns: 1fr; }
+      .user-bubble, .assistant-card { max-width: 88%; }
+      .chatbar-inner { flex-wrap: wrap; }
+      .chatbar-actions { width: 100%; }
+      .chatbar-search, .chatbar-ai { flex: 1; }
     }
   </style>
 </head>
@@ -626,27 +590,22 @@
                     <h3>社内規定</h3>
                     <p>就業ルール、申請関係、社内ルールを確認</p>
                   </a>
-
                   <a class="category-card" href="pages/safety.html">
                     <h3>安全資料</h3>
                     <p>安全衛生、KY、事故防止、注意事項を確認</p>
                   </a>
-
                   <a class="category-card" href="pages/manual.html">
                     <h3>工事マニュアル</h3>
                     <p>IP・LED・TVなど現場マニュアルを確認</p>
                   </a>
-
                   <a class="category-card" href="pages/it.html">
                     <h3>IT・端末</h3>
                     <p>スマホ、システム、社内IT利用手順を確認</p>
                   </a>
-
                   <a class="category-card" href="pages/documents.html">
                     <h3>業務資料</h3>
                     <p>各種資料、提出書類、参考文書を確認</p>
                   </a>
-
                   <a class="category-card" href="pages/system.html">
                     <h3>システム資料</h3>
                     <p>運用フロー、社内システム、管理資料を確認</p>
@@ -665,7 +624,6 @@
 
     <section class="results-wrap" id="resultsWrap">
       <div class="conversation-wrap" id="conversationWrap"></div>
-
       <div class="results-header" id="resultsHeader"></div>
       <div class="results-list" id="resultsBody"></div>
     </section>
@@ -694,19 +652,17 @@
     async function loadSearchIndex() {
       try {
         const res = await fetch("json/search-index.json");
-        if (!res.ok) {
-          throw new Error("search-index.json の読み込みに失敗しました");
-        }
+        if (!res.ok) throw new Error("search-index.json の読み込みに失敗しました");
 
         const data = await res.json();
         searchIndex = Array.isArray(data.records) ? data.records : [];
 
-        const loadingNote = document.getElementById("loadingNote");
-        loadingNote.textContent = `検索データ読込完了：${searchIndex.length}件`;
+        document.getElementById("loadingNote").textContent =
+          `検索データ読込完了：${searchIndex.length}件`;
       } catch (err) {
         console.error(err);
-        const loadingNote = document.getElementById("loadingNote");
-        loadingNote.textContent = "検索データの読み込みに失敗しました";
+        document.getElementById("loadingNote").textContent =
+          "検索データの読み込みに失敗しました";
       }
     }
 
@@ -728,9 +684,7 @@
       return String(text || "")
         .normalize("NFKC")
         .toLowerCase()
-        .replace(/[\u30a1-\u30f6]/g, function(ch) {
-          return String.fromCharCode(ch.charCodeAt(0) - 0x60);
-        })
+        .replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
         .replace(/\s+/g, "")
         .replace(/　/g, "");
     }
@@ -779,7 +733,7 @@
       let snippet = raw.slice(start, end);
 
       if (start > 0) snippet = "..." + snippet;
-      if (end < raw.length) snippet = snippet + "...";
+      if (end < raw.length) snippet += "...";
 
       return snippet;
     }
@@ -863,23 +817,15 @@
               <div class="assistant-card">
                 <div class="assistant-label">AI回答</div>
                 <div>${escapeHtml(item.content).replace(/\n/g, "<br>")}</div>
-                ${
-                  citationHtml
-                    ? `<div class="citation-box">${citationHtml}</div>`
-                    : ""
-                }
-                ${
-                  refCount > 0
-                    ? `
-                      <div class="ref-toggle" onclick="toggleRefs(${index})">
-                        参考資料 ${refCount}件を表示 / 非表示
-                      </div>
-                      <div class="ref-box" id="ref-box-${index}">
-                        ${refsHtml}
-                      </div>
-                    `
-                    : ""
-                }
+                ${citationHtml ? `<div class="citation-box">${citationHtml}</div>` : ""}
+                ${refCount > 0 ? `
+                  <div class="ref-toggle" onclick="toggleRefs(${index})">
+                    参考資料 ${refCount}件を表示 / 非表示
+                  </div>
+                  <div class="ref-box" id="ref-box-${index}">
+                    ${refsHtml}
+                  </div>
+                ` : ""}
               </div>
             </div>
           `;
@@ -896,10 +842,7 @@
     }
 
     function appendUserMessage(text) {
-      conversationHistory.push({
-        role: "user",
-        content: text
-      });
+      conversationHistory.push({ role: "user", content: text });
       renderConversation();
     }
 
@@ -1025,7 +968,7 @@
 
       try {
         data = text ? JSON.parse(text) : {};
-      } catch (e) {
+      } catch {
         throw new Error("AI応答の形式が不正です");
       }
 
@@ -1158,12 +1101,9 @@
             const idx = Number(c.index) - 1;
             const item = topMatched[idx];
             const page = c.page || (item ? item.page : "");
-
             if (!item) return "";
-
             const title = escapeHtml(item.title || "資料");
             const url = item.url || "#";
-
             return `・<a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>（P${escapeHtml(page)}）`;
           }).filter(Boolean);
 
@@ -1186,15 +1126,11 @@
     }
 
     document.getElementById("searchInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        searchDocs();
-      }
+      if (e.key === "Enter") searchDocs();
     });
 
     document.getElementById("chatInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        askAIFromBottom();
-      }
+      if (e.key === "Enter") askAIFromBottom();
     });
 
     loadSearchIndex();
