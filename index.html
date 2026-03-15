@@ -11,6 +11,10 @@
       box-sizing: border-box;
     }
 
+    html, body {
+      height: 100%;
+    }
+
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
@@ -27,6 +31,11 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      padding-bottom: 0;
+    }
+
+    .page.with-chatbar {
+      padding-bottom: 88px;
     }
 
     .topbar {
@@ -49,12 +58,12 @@
 
     .hero.compact {
       display: block;
-      padding: 16px 16px 8px;
+      padding: 12px 16px 10px;
       border-bottom: 1px solid #f1f3f4;
       position: sticky;
       top: 0;
       background: #fff;
-      z-index: 50;
+      z-index: 40;
     }
 
     .hero-inner {
@@ -70,15 +79,12 @@
     }
 
     .hero-top-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 18px;
-      flex-wrap: wrap;
+      display: block;
     }
 
     .hero.compact .hero-top-row {
-      justify-content: flex-start;
+      display: flex;
+      align-items: center;
       gap: 14px;
     }
 
@@ -92,7 +98,7 @@
     }
 
     .hero.compact .site-logo {
-      width: 180px;
+      width: 170px;
       margin: 0;
       flex: 0 0 auto;
     }
@@ -102,7 +108,6 @@
       color: #5f6368;
       margin: 0 0 28px;
       line-height: 1.8;
-      transition: all 0.2s ease;
     }
 
     .hero.compact .subtext {
@@ -113,12 +118,10 @@
       width: 100%;
       max-width: 760px;
       margin: 0 auto;
-      transition: all 0.25s ease;
     }
 
     .hero.compact .search-shell {
-      max-width: none;
-      width: 100%;
+      max-width: 560px;
       margin: 0;
       flex: 1 1 auto;
     }
@@ -142,7 +145,9 @@
     }
 
     .hero.compact .search-box {
-      min-height: 54px;
+      min-height: 48px;
+      border-radius: 24px;
+      padding: 0 14px;
     }
 
     .search-icon {
@@ -162,7 +167,7 @@
     }
 
     .hero.compact .search-box input {
-      font-size: 16px;
+      font-size: 15px;
     }
 
     .search-actions {
@@ -171,13 +176,10 @@
       justify-content: center;
       margin-top: 24px;
       flex-wrap: wrap;
-      transition: all 0.25s ease;
     }
 
     .hero.compact .search-actions {
-      justify-content: flex-start;
-      margin-top: 10px;
-      margin-left: 194px;
+      display: none;
     }
 
     .action-btn {
@@ -200,13 +202,10 @@
       margin-top: 18px;
       font-size: 13px;
       color: #5f6368;
-      transition: all 0.25s ease;
     }
 
     .hero.compact .status-note {
-      margin-top: 10px;
-      margin-left: 194px;
-      text-align: left;
+      display: none;
     }
 
     .category-toggle-wrap {
@@ -214,8 +213,7 @@
     }
 
     .hero.compact .category-toggle-wrap {
-      margin-top: 10px;
-      margin-left: 194px;
+      display: none;
     }
 
     .category-panel {
@@ -233,10 +231,6 @@
       justify-content: center;
       flex-wrap: wrap;
       margin-bottom: 14px;
-    }
-
-    .hero.compact .quick-links {
-      justify-content: flex-start;
     }
 
     .chip {
@@ -287,12 +281,38 @@
       line-height: 1.6;
     }
 
+    .home-link {
+      display: none;
+      max-width: 760px;
+      margin: 14px auto 0;
+      padding: 0 16px;
+      width: 100%;
+      font-size: 14px;
+    }
+
+    .home-link.active {
+      display: block;
+    }
+
+    .home-link button {
+      border: none;
+      background: none;
+      color: #1a73e8;
+      cursor: pointer;
+      padding: 0;
+      font-size: 14px;
+    }
+
+    .home-link button:hover {
+      text-decoration: underline;
+    }
+
     .results-wrap {
       display: none;
       width: 100%;
       max-width: 980px;
       margin: 0 auto;
-      padding: 16px 16px 48px;
+      padding: 12px 16px 30px;
     }
 
     .results-wrap.active {
@@ -405,43 +425,87 @@
       word-break: break-word;
     }
 
-    .home-link {
+    .chatbar {
       display: none;
-      max-width: 760px;
-      margin: 0 auto 12px;
-      font-size: 14px;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.96);
+      border-top: 1px solid #e5e7eb;
+      backdrop-filter: blur(8px);
+      z-index: 60;
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
     }
 
-    .home-link.active {
+    .chatbar.active {
       display: block;
     }
 
-    .home-link button {
-      border: none;
-      background: none;
-      color: #1a73e8;
-      cursor: pointer;
-      padding: 0;
-      font-size: 14px;
+    .chatbar-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
 
-    .home-link button:hover {
-      text-decoration: underline;
+    .chatbar-input {
+      flex: 1;
+      min-height: 46px;
+      border: 1px solid #dfe1e5;
+      border-radius: 23px;
+      padding: 0 16px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+    }
+
+    .chatbar-input:focus {
+      box-shadow: 0 2px 8px rgba(32,33,36,.12);
+      border-color: #c7d2fe;
+    }
+
+    .chatbar-btn {
+      border: none;
+      background: #1a73e8;
+      color: #fff;
+      min-width: 72px;
+      height: 44px;
+      border-radius: 22px;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 16px;
+    }
+
+    .chatbar-btn:hover {
+      background: #1765cc;
+    }
+
+    .chatbar-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chatbar-subbtn {
+      border: 1px solid #dfe1e5;
+      background: #fff;
+      color: #3c4043;
+      height: 44px;
+      border-radius: 22px;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 14px;
+      white-space: nowrap;
+    }
+
+    .chatbar-subbtn:hover {
+      background: #f8f9fa;
     }
 
     @media (max-width: 900px) {
       .category-grid {
         grid-template-columns: repeat(2, 1fr);
-      }
-
-      .hero.compact .search-actions,
-      .hero.compact .status-note,
-      .hero.compact .category-toggle-wrap {
-        margin-left: 0;
-      }
-
-      .hero.compact .hero-top-row {
-        align-items: stretch;
       }
     }
 
@@ -451,7 +515,17 @@
       }
 
       .hero.compact .site-logo {
-        width: 140px;
+        width: 130px;
+      }
+
+      .hero.compact .hero-top-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .hero.compact .search-shell {
+        max-width: none;
+        width: 100%;
       }
 
       .search-box input {
@@ -466,22 +540,27 @@
         grid-template-columns: 1fr;
       }
 
-      .hero.compact .hero-top-row {
-        display: block;
-      }
-
-      .hero.compact .search-shell {
-        margin-top: 10px;
-      }
-
       .user-bubble {
         max-width: 88%;
+      }
+
+      .chatbar-inner {
+        flex-wrap: wrap;
+      }
+
+      .chatbar-actions {
+        width: 100%;
+      }
+
+      .chatbar-subbtn,
+      .chatbar-btn {
+        flex: 1;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page" id="pageRoot">
     <div class="topbar">
       <div>社内検索</div>
     </div>
@@ -492,7 +571,7 @@
           <img src="img/logo.png" alt="TECHNOP@L-NET" class="site-logo">
 
           <div class="search-shell">
-            <div class="subtext" id="heroSubtext">
+            <div class="subtext">
               社内PDF・規定・安全資料・業務資料を横断検索<br>
               キーワード検索でも、AI質問でも使えます。
             </div>
@@ -579,6 +658,22 @@
       <div class="results-header" id="resultsHeader"></div>
       <div class="results-list" id="resultsBody"></div>
     </section>
+  </div>
+
+  <div class="chatbar" id="chatbar">
+    <div class="chatbar-inner">
+      <input
+        type="text"
+        id="chatInput"
+        class="chatbar-input"
+        placeholder="質問や検索語を入力..."
+        autocomplete="off"
+      >
+      <div class="chatbar-actions">
+        <button class="chatbar-subbtn" onclick="searchDocsFromBottom()">検索</button>
+        <button class="chatbar-btn" onclick="askAIFromBottom()">送信</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -707,6 +802,16 @@
       document.getElementById("heroSection").classList.add("compact");
       document.getElementById("resultsWrap").classList.add("active");
       document.getElementById("homeLink").classList.add("active");
+      document.getElementById("chatbar").classList.add("active");
+      document.getElementById("pageRoot").classList.add("with-chatbar");
+    }
+
+    function syncBottomInput(value) {
+      document.getElementById("chatInput").value = value || "";
+    }
+
+    function syncTopInput(value) {
+      document.getElementById("searchInput").value = value || "";
     }
 
     function goHome() {
@@ -714,9 +819,12 @@
       document.getElementById("resultsWrap").classList.remove("active");
       document.getElementById("homeLink").classList.remove("active");
       document.getElementById("aiPanel").classList.remove("active");
+      document.getElementById("chatbar").classList.remove("active");
+      document.getElementById("pageRoot").classList.remove("with-chatbar");
       document.getElementById("resultsHeader").innerHTML = "";
       document.getElementById("resultsBody").innerHTML = "";
       document.getElementById("conversationWrap").innerHTML = "";
+      syncBottomInput("");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -869,8 +977,28 @@ ${contextText}
       return data.answer || "回答を取得できませんでした。";
     }
 
-    function searchDocs() {
-      const input = document.getElementById("searchInput").value.trim();
+    function getTopInputValue() {
+      return document.getElementById("searchInput").value.trim();
+    }
+
+    function getBottomInputValue() {
+      return document.getElementById("chatInput").value.trim();
+    }
+
+    function searchDocsFromBottom() {
+      const value = getBottomInputValue();
+      syncTopInput(value);
+      searchDocs(value);
+    }
+
+    function askAIFromBottom() {
+      const value = getBottomInputValue();
+      syncTopInput(value);
+      askAI(value);
+    }
+
+    function searchDocs(forcedInput) {
+      const input = typeof forcedInput === "string" ? forcedInput.trim() : getTopInputValue();
       const aiPanel = document.getElementById("aiPanel");
       aiPanel.classList.remove("active");
 
@@ -883,6 +1011,7 @@ ${contextText}
             <div class="result-snippet">検索キーワードを入力してください。</div>
           </div>
         `;
+        syncBottomInput("");
         scrollToConversation();
         return;
       }
@@ -899,6 +1028,7 @@ ${contextText}
             </div>
           </div>
         `;
+        syncBottomInput(input);
         scrollToConversation();
         return;
       }
@@ -907,17 +1037,19 @@ ${contextText}
       showResultsLayout();
       appendUserBubble(input);
       renderResults(matched, input);
+      syncBottomInput(input);
       scrollToConversation();
     }
 
-    async function askAI() {
-      const input = document.getElementById("searchInput").value.trim();
+    async function askAI(forcedInput) {
+      const input = typeof forcedInput === "string" ? forcedInput.trim() : getTopInputValue();
       const aiPanel = document.getElementById("aiPanel");
       const aiAnswer = document.getElementById("aiAnswer");
 
       showResultsLayout();
       appendUserBubble(input || "質問を入力してください");
       aiPanel.classList.add("active");
+      syncBottomInput(input);
       scrollToConversation();
 
       if (!input) {
@@ -987,6 +1119,12 @@ ${refs}
     document.getElementById("searchInput").addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         searchDocs();
+      }
+    });
+
+    document.getElementById("chatInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        askAIFromBottom();
       }
     });
 
