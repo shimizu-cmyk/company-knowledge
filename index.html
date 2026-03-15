@@ -636,6 +636,7 @@
 
     <section class="results-wrap" id="resultsWrap">
       <div class="conversation-wrap" id="conversationWrap"></div>
+
       <div class="results-header" id="resultsHeader"></div>
       <div class="results-list" id="resultsBody"></div>
     </section>
@@ -663,7 +664,7 @@
 
     async function loadSearchIndex() {
       try {
-        const res = await fetch("json/search-index.json?ts=" + Date.now(), { cache: "no-store" });
+        const res = await fetch("json/search-index.json");
         if (!res.ok) {
           throw new Error("search-index.json の読み込みに失敗しました");
         }
@@ -701,13 +702,8 @@
         .replace(/[\u30a1-\u30f6]/g, function(ch) {
           return String.fromCharCode(ch.charCodeAt(0) - 0x60);
         })
-        .replace(/[!！?？。、，,.\-ー_\/\\:：;；"'`~〜（）()\[\]{}【】]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
-    function normalizeTight(text) {
-      return normalize(text).replace(/\s+/g, "");
+        .replace(/\s+/g, "")
+        .replace(/　/g, "");
     }
 
     function escapeHtml(str) {
@@ -720,7 +716,7 @@
     }
 
     function buildSearchTarget(item) {
-      return normalizeTight([
+      return normalize([
         item.title,
         item.file,
         item.path,
@@ -732,51 +728,6 @@
       ].join(" "));
     }
 
-    function buildQueryTokens(input) {
-      const original = String(input || "").trim();
-      const loose = normalize(original);
-      const tight = normalizeTight(original);
-
-      const tokens = new Set();
-
-      if (tight) tokens.add(tight);
-
-      loose.split(" ").filter(Boolean).forEach(w => {
-        if (w.length >= 1) tokens.add(w);
-      });
-
-      const cleaned = tight
-        .replace(/(について|とは|って|ですか|ますか|でしょうか|教えて|知りたい|ある|いる|は|が|を|に|で|の|も|？|\?)+$/g, "");
-
-      if (cleaned) tokens.add(cleaned);
-
-      for (let len = 4; len >= 2; len--) {
-        for (let i = 0; i <= cleaned.length - len; i++) {
-          const part = cleaned.slice(i, i + len);
-          if (part.length >= 2) tokens.add(part);
-        }
-      }
-
-      return Array.from(tokens).filter(Boolean);
-    }
-
-    function isGreeting(input) {
-      const q = normalizeTight(input);
-      const greetings = [
-        "こんにちは",
-        "こんばんは",
-        "おはよう",
-        "はじめまして",
-        "よろしく",
-        "よろしくお願いします",
-        "やあ",
-        "もしもし",
-        "hi",
-        "hello"
-      ];
-      return greetings.some(g => q === normalizeTight(g));
-    }
-
     function makeSnippet(text, keyword) {
       const raw = String(text || "");
       if (!raw) return "";
@@ -786,26 +737,16 @@
         return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
       }
 
-      const normalizedRaw = normalizeTight(raw);
-      const queryTokens = buildQueryTokens(q);
-      let hitIndex = -1;
-      let hitToken = "";
+      const normalizedRaw = normalize(raw);
+      const normalizedQ = normalize(q);
+      const idx = normalizedRaw.indexOf(normalizedQ);
 
-      for (const token of queryTokens.sort((a, b) => b.length - a.length)) {
-        const idx = normalizedRaw.indexOf(token);
-        if (idx !== -1) {
-          hitIndex = idx;
-          hitToken = token;
-          break;
-        }
-      }
-
-      if (hitIndex === -1) {
+      if (idx === -1) {
         return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
       }
 
-      const start = Math.max(0, hitIndex - 50);
-      const end = Math.min(raw.length, hitIndex + hitToken.length + 90);
+      const start = Math.max(0, idx - 50);
+      const end = Math.min(raw.length, idx + q.length + 90);
       let snippet = raw.slice(start, end);
 
       if (start > 0) snippet = "..." + snippet;
@@ -815,27 +756,26 @@
     }
 
     function scoreItem(item, input) {
-      const q = normalizeTight(input);
-      const title = normalizeTight(item.title);
-      const location = normalizeTight(item.location);
-      const text = normalizeTight(item.text);
-      const file = normalizeTight(item.file);
+      const q = normalize(input);
+      const title = normalize(item.title);
+      const location = normalize(item.location);
+      const text = normalize(item.text);
 
       let score = 0;
 
-      if (q && title.includes(q)) score += 160;
-      if (q && file.includes(q)) score += 80;
+      if (q && title.includes(q)) score += 120;
       if (q && location.includes(q)) score += 40;
-      if (q && text.includes(q)) score += 25;
+      if (q && text.includes(q)) score += 20;
 
-      const tokens = buildQueryTokens(input);
+      const words = String(input || "")
+        .split(/[\s　]+/)
+        .map(w => normalize(w))
+        .filter(Boolean);
 
-      for (const token of tokens) {
-        if (!token) continue;
-        if (title.includes(token)) score += Math.max(20, token.length * 12);
-        if (file.includes(token)) score += Math.max(10, token.length * 8);
-        if (location.includes(token)) score += Math.max(6, token.length * 5);
-        if (text.includes(token)) score += Math.max(4, token.length * 3);
+      for (const w of words) {
+        if (title.includes(w)) score += 35;
+        if (location.includes(w)) score += 10;
+        if (text.includes(w)) score += 6;
       }
 
       return score;
@@ -947,6 +887,17 @@
       }, 80);
     }
 
+    function addSearchParamToUrl(url, keyword) {
+      if (!url) return "#";
+      const q = String(keyword || "").trim();
+      if (!q) return url;
+
+      if (url.includes("#")) {
+        return `${url}&search=${encodeURIComponent(q)}`;
+      }
+      return `${url}#search=${encodeURIComponent(q)}`;
+    }
+
     function renderResults(matched, input) {
       const resultsBody = document.getElementById("resultsBody");
       const resultsHeader = document.getElementById("resultsHeader");
@@ -973,10 +924,12 @@
         const locationText = escapeHtml(item.location || "");
 
         if (item.type === "pdf") {
+          const pdfLink = addSearchParamToUrl(item.url || "#", input);
+
           return `
             <div class="result-item">
               <div class="result-path">${pathText}</div>
-              <a class="result-title" href="${item.url || "#"}" target="_blank" rel="noopener noreferrer">${titleText}</a>
+              <a class="result-title" href="${pdfLink}" target="_blank" rel="noopener noreferrer">${titleText}</a>
               <div class="result-meta">PDF / ${locationText} / ${fileText}</div>
               <div class="result-snippet">${snippet}</div>
             </div>
@@ -995,8 +948,12 @@
     }
 
     function getMatchedItems(input, limit = 30) {
-      const q = normalizeTight(input);
-      const tokens = buildQueryTokens(input);
+      const q = normalize(input);
+
+      const words = String(input || "")
+        .split(/[\s　]+/)
+        .map(w => normalize(w))
+        .filter(Boolean);
 
       return searchIndex
         .map(item => {
@@ -1005,13 +962,9 @@
 
           if (q && target.includes(q)) {
             matched = true;
-          } else {
-            for (const token of tokens) {
-              if (token.length >= 2 && target.includes(token)) {
-                matched = true;
-                break;
-              }
-            }
+          } else if (words.length > 0) {
+            const hitCount = words.filter(w => target.includes(w)).length;
+            matched = hitCount >= 1;
           }
 
           if (!matched) return null;
@@ -1024,15 +977,6 @@
         .filter(Boolean)
         .sort((a, b) => b._score - a._score)
         .slice(0, limit);
-    }
-
-    function buildRefsHtml(matched) {
-      return matched.map(item => {
-        if (item.type === "pdf") {
-          return `・<a href="${item.url || "#"}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || "")}）`;
-        }
-        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || "")}）`;
-      }).join("<br>");
     }
 
     async function fetchAIAnswer(question, matched) {
@@ -1066,9 +1010,9 @@ ${contextText}
 - 回答は日本語で、分かりやすく簡潔に書く
 - まず結論を書く
 - そのあと必要なら箇条書きで補足する
+- 関連資料に書かれている内容を優先する
+- 挨拶や雑談だけでも自然に返答する
 - 関連資料に書かれていないことは断定しない
-- 挨拶や雑談には自然に返答する
-- 関連資料がある場合は資料を優先して回答する
 - 不明な場合は「資料上では確認できません」と書く
 `;
 
@@ -1082,11 +1026,10 @@ ${contextText}
         })
       });
 
-      const rawText = await response.text();
+      const text = await response.text();
       let data = {};
-
       try {
-        data = rawText ? JSON.parse(rawText) : {};
+        data = text ? JSON.parse(text) : {};
       } catch (e) {
         throw new Error("AI応答の形式が不正です");
       }
@@ -1096,6 +1039,36 @@ ${contextText}
       }
 
       return data.answer || "回答を取得できませんでした。";
+    }
+
+    function createLocalSummaryAnswer(question, matched) {
+      const q = String(question || "").trim();
+
+      if (!q) {
+        return "質問を入力してください。";
+      }
+
+      if (matched.length === 0) {
+        return "該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分";
+      }
+
+      const top = matched.slice(0, 3);
+      const lines = [];
+      lines.push("関連資料は見つかっています。");
+      lines.push("APIエラー時のため要約回答に切り替えられませんでした。");
+      lines.push("参考資料を開いて確認してください。");
+
+      const useful = top
+        .map(item => `・${item.title || "無題"}（${item.location || ""}）`)
+        .join("\n");
+
+      if (useful) {
+        lines.push("");
+        lines.push("候補資料:");
+        lines.push(useful);
+      }
+
+      return lines.join("\n");
     }
 
     function getTopInputValue() {
@@ -1177,17 +1150,11 @@ ${contextText}
 
       appendUserMessage(input);
       syncBottomInput(input);
-      document.getElementById("resultsHeader").textContent = "";
-      document.getElementById("resultsBody").innerHTML = "";
       scrollToLatest();
 
-      if (isGreeting(input)) {
-        appendAssistantMessage("こんにちは。社内ナレッジAIです。就業規則、安全資料、工事マニュアル、社内ルールなどについて質問できます。", "", 0);
-        scrollToLatest();
-        return;
-      }
-
       if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
+        document.getElementById("resultsHeader").textContent = "";
+        document.getElementById("resultsBody").innerHTML = "";
         appendAssistantMessage("検索データがまだ読み込まれていません。先に search-index.json の生成・配置を確認してください。", "", 0);
         scrollToLatest();
         return;
@@ -1196,84 +1163,35 @@ ${contextText}
       const matched = getMatchedItems(input, 9999);
 
       if (matched.length === 0) {
-        appendAssistantMessage(
-          "該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分",
-          "",
-          0
-        );
+        document.getElementById("resultsHeader").textContent = "";
+        document.getElementById("resultsBody").innerHTML = "";
+        appendAssistantMessage("該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分", "", 0);
         scrollToLatest();
         return;
       }
 
-      const refs = buildRefsHtml(matched);
+      const refs = matched.map(item => {
+        if (item.type === "pdf") {
+          const refLink = addSearchParamToUrl(item.url || "#", input);
+          return `・<a href="${refLink}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || "")}）`;
+        }
+        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || "")}）`;
+      }).join("<br>");
+
+      document.getElementById("resultsHeader").textContent = "";
+      document.getElementById("resultsBody").innerHTML = "";
 
       try {
         const answer = await fetchAIAnswer(input, matched.slice(0, 5));
         appendAssistantMessage(answer, refs, matched.length);
       } catch (error) {
-        const fallback = buildFallbackAnswer(input, matched);
-        if (fallback) {
-          appendAssistantMessage(fallback, refs, matched.length);
-        } else {
-          appendAssistantMessage(
-            `AI回答の取得でエラーが発生しました。\n${error.message}\nただし、関連資料は見つかっています。`,
-            refs,
-            matched.length
-          );
-        }
+        console.error(error);
+
+        const fallback = createLocalSummaryAnswer(input, matched);
+        appendAssistantMessage(fallback, refs, matched.length);
       }
 
       scrollToLatest();
-    }
-
-    function buildFallbackAnswer(input, matched) {
-      const q = normalizeTight(input);
-      const hitTexts = matched.slice(0, 5).map(x => String(x.text || "")).join("\n");
-
-      if (q.includes("熱中")) {
-        return [
-          "結論：資料上では、熱中症対策として休憩・水分塩分補給・体調確認・身体冷却を徹底する運用です。",
-          "",
-          "主な内容",
-          "・早め早めの水分、塩分補給",
-          "・WBGT値、気温を確認して作業内容を考慮",
-          "・朝礼、昼礼、終礼で周知と体調確認",
-          "・6月～9月はクーラーボックス持参",
-          "・気温30℃以上では空調服着用",
-          "・異常時は作業離脱、身体冷却、現場担当へ報告",
-          "・意識異常があれば救急要請、判断に迷う場合は #7119",
-          "",
-          "詳しく知りたい場合は「熱中症の連絡フローだけ教えて」や「現場ルールを要約して」と聞いてください。"
-        ].join("\n");
-      }
-
-      if (q.includes("酒気") || q.includes("アルコール")) {
-        return [
-          "結論：資料上では、運転前後にアルコール測定を行い、0.00mg/L以外は運転禁止です。",
-          "",
-          "主な内容",
-          "・運転前と運転後に記録",
-          "・測定値が0.00mg/L以外ならその日の運転は禁止",
-          "・酒気帯びが確認された場合は速やかに所属長へ報告"
-        ].join("\n");
-      }
-
-      if (q.includes("事故処分") || q.includes("事故")) {
-        return [
-          "結論：資料上では、車両事故は期ごとにカウントし、回数に応じて指導・適性診断・外部講習へ進みます。",
-          "",
-          "・1回目：安全運転責任者による指導",
-          "・2回目：教習所で運転適性診断",
-          "・3回目：免停1か月および外部安全講習",
-          "・事故報告は継続、評価にも反映"
-        ].join("\n");
-      }
-
-      if (hitTexts) {
-        return "関連資料は見つかっています。Groq APIエラー時のため要約回答に切り替えられませんでした。参考資料を開いて確認してください。";
-      }
-
-      return "";
     }
 
     document.getElementById("searchInput").addEventListener("keydown", function(e) {
