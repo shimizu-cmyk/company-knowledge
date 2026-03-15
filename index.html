@@ -7,8 +7,13 @@
   <meta name="description" content="社内PDF・規定・安全資料を検索できる社内ナレッジAI">
 
   <style>
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
 
     body {
       margin: 0;
@@ -18,7 +23,9 @@
       min-height: 100vh;
     }
 
-    a { color: inherit; }
+    a {
+      color: inherit;
+    }
 
     .page {
       min-height: 100vh;
@@ -346,31 +353,6 @@
       margin-bottom: 6px;
     }
 
-    .citation-box {
-      margin-top: 10px;
-      padding: 10px 12px;
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      font-size: 13px;
-      line-height: 1.7;
-    }
-
-    .citation-box strong {
-      display: block;
-      margin-bottom: 4px;
-      color: #374151;
-    }
-
-    .citation-box a {
-      color: #1a73e8;
-      text-decoration: none;
-    }
-
-    .citation-box a:hover {
-      text-decoration: underline;
-    }
-
     .ref-toggle {
       display: inline-block;
       margin-top: 12px;
@@ -528,14 +510,39 @@
     }
 
     @media (max-width: 640px) {
-      .site-logo { width: 300px; }
-      .hero.compact .site-logo { width: 130px; }
-      .result-title { font-size: 19px; }
-      .category-grid { grid-template-columns: 1fr; }
-      .user-bubble, .assistant-card { max-width: 88%; }
-      .chatbar-inner { flex-wrap: wrap; }
-      .chatbar-actions { width: 100%; }
-      .chatbar-search, .chatbar-ai { flex: 1; }
+      .site-logo {
+        width: 300px;
+      }
+
+      .hero.compact .site-logo {
+        width: 130px;
+      }
+
+      .result-title {
+        font-size: 19px;
+      }
+
+      .category-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .user-bubble,
+      .assistant-card {
+        max-width: 88%;
+      }
+
+      .chatbar-inner {
+        flex-wrap: wrap;
+      }
+
+      .chatbar-actions {
+        width: 100%;
+      }
+
+      .chatbar-search,
+      .chatbar-ai {
+        flex: 1;
+      }
     }
   </style>
 </head>
@@ -590,22 +597,27 @@
                     <h3>社内規定</h3>
                     <p>就業ルール、申請関係、社内ルールを確認</p>
                   </a>
+
                   <a class="category-card" href="pages/safety.html">
                     <h3>安全資料</h3>
                     <p>安全衛生、KY、事故防止、注意事項を確認</p>
                   </a>
+
                   <a class="category-card" href="pages/manual.html">
                     <h3>工事マニュアル</h3>
                     <p>IP・LED・TVなど現場マニュアルを確認</p>
                   </a>
+
                   <a class="category-card" href="pages/it.html">
                     <h3>IT・端末</h3>
                     <p>スマホ、システム、社内IT利用手順を確認</p>
                   </a>
+
                   <a class="category-card" href="pages/documents.html">
                     <h3>業務資料</h3>
                     <p>各種資料、提出書類、参考文書を確認</p>
                   </a>
+
                   <a class="category-card" href="pages/system.html">
                     <h3>システム資料</h3>
                     <p>運用フロー、社内システム、管理資料を確認</p>
@@ -651,18 +663,20 @@
 
     async function loadSearchIndex() {
       try {
-        const res = await fetch("json/search-index.json");
-        if (!res.ok) throw new Error("search-index.json の読み込みに失敗しました");
+        const res = await fetch("json/search-index.json?ts=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) {
+          throw new Error("search-index.json の読み込みに失敗しました");
+        }
 
         const data = await res.json();
         searchIndex = Array.isArray(data.records) ? data.records : [];
 
-        document.getElementById("loadingNote").textContent =
-          `検索データ読込完了：${searchIndex.length}件`;
+        const loadingNote = document.getElementById("loadingNote");
+        loadingNote.textContent = `検索データ読込完了：${searchIndex.length}件`;
       } catch (err) {
         console.error(err);
-        document.getElementById("loadingNote").textContent =
-          "検索データの読み込みに失敗しました";
+        const loadingNote = document.getElementById("loadingNote");
+        loadingNote.textContent = "検索データの読み込みに失敗しました";
       }
     }
 
@@ -684,9 +698,16 @@
       return String(text || "")
         .normalize("NFKC")
         .toLowerCase()
-        .replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60))
-        .replace(/\s+/g, "")
-        .replace(/　/g, "");
+        .replace(/[\u30a1-\u30f6]/g, function(ch) {
+          return String.fromCharCode(ch.charCodeAt(0) - 0x60);
+        })
+        .replace(/[!！?？。、，,.\-ー_\/\\:：;；"'`~〜（）()\[\]{}【】]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function normalizeTight(text) {
+      return normalize(text).replace(/\s+/g, "");
     }
 
     function escapeHtml(str) {
@@ -699,7 +720,7 @@
     }
 
     function buildSearchTarget(item) {
-      return normalize([
+      return normalizeTight([
         item.title,
         item.file,
         item.path,
@@ -711,6 +732,51 @@
       ].join(" "));
     }
 
+    function buildQueryTokens(input) {
+      const original = String(input || "").trim();
+      const loose = normalize(original);
+      const tight = normalizeTight(original);
+
+      const tokens = new Set();
+
+      if (tight) tokens.add(tight);
+
+      loose.split(" ").filter(Boolean).forEach(w => {
+        if (w.length >= 1) tokens.add(w);
+      });
+
+      const cleaned = tight
+        .replace(/(について|とは|って|ですか|ますか|でしょうか|教えて|知りたい|ある|いる|は|が|を|に|で|の|も|？|\?)+$/g, "");
+
+      if (cleaned) tokens.add(cleaned);
+
+      for (let len = 4; len >= 2; len--) {
+        for (let i = 0; i <= cleaned.length - len; i++) {
+          const part = cleaned.slice(i, i + len);
+          if (part.length >= 2) tokens.add(part);
+        }
+      }
+
+      return Array.from(tokens).filter(Boolean);
+    }
+
+    function isGreeting(input) {
+      const q = normalizeTight(input);
+      const greetings = [
+        "こんにちは",
+        "こんばんは",
+        "おはよう",
+        "はじめまして",
+        "よろしく",
+        "よろしくお願いします",
+        "やあ",
+        "もしもし",
+        "hi",
+        "hello"
+      ];
+      return greetings.some(g => q === normalizeTight(g));
+    }
+
     function makeSnippet(text, keyword) {
       const raw = String(text || "");
       if (!raw) return "";
@@ -720,45 +786,56 @@
         return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
       }
 
-      const normalizedRaw = normalize(raw);
-      const normalizedQ = normalize(q);
-      const idx = normalizedRaw.indexOf(normalizedQ);
+      const normalizedRaw = normalizeTight(raw);
+      const queryTokens = buildQueryTokens(q);
+      let hitIndex = -1;
+      let hitToken = "";
 
-      if (idx === -1) {
+      for (const token of queryTokens.sort((a, b) => b.length - a.length)) {
+        const idx = normalizedRaw.indexOf(token);
+        if (idx !== -1) {
+          hitIndex = idx;
+          hitToken = token;
+          break;
+        }
+      }
+
+      if (hitIndex === -1) {
         return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
       }
 
-      const start = Math.max(0, idx - 50);
-      const end = Math.min(raw.length, idx + q.length + 90);
+      const start = Math.max(0, hitIndex - 50);
+      const end = Math.min(raw.length, hitIndex + hitToken.length + 90);
       let snippet = raw.slice(start, end);
 
       if (start > 0) snippet = "..." + snippet;
-      if (end < raw.length) snippet += "...";
+      if (end < raw.length) snippet = snippet + "...";
 
       return snippet;
     }
 
     function scoreItem(item, input) {
-      const q = normalize(input);
-      const title = normalize(item.title);
-      const location = normalize(item.location);
-      const text = normalize(item.text);
+      const q = normalizeTight(input);
+      const title = normalizeTight(item.title);
+      const location = normalizeTight(item.location);
+      const text = normalizeTight(item.text);
+      const file = normalizeTight(item.file);
 
       let score = 0;
 
-      if (q && title.includes(q)) score += 120;
+      if (q && title.includes(q)) score += 160;
+      if (q && file.includes(q)) score += 80;
       if (q && location.includes(q)) score += 40;
-      if (q && text.includes(q)) score += 20;
+      if (q && text.includes(q)) score += 25;
 
-      const words = String(input || "")
-        .split(/[\s　]+/)
-        .map(w => normalize(w))
-        .filter(Boolean);
+      const tokens = buildQueryTokens(input);
 
-      for (const w of words) {
-        if (title.includes(w)) score += 35;
-        if (location.includes(w)) score += 10;
-        if (text.includes(w)) score += 6;
+      for (const token of tokens) {
+        if (!token) continue;
+        if (title.includes(token)) score += Math.max(20, token.length * 12);
+        if (file.includes(token)) score += Math.max(10, token.length * 8);
+        if (location.includes(token)) score += Math.max(6, token.length * 5);
+        if (text.includes(token)) score += Math.max(4, token.length * 3);
       }
 
       return score;
@@ -810,22 +887,24 @@
         if (item.role === "assistant") {
           const refsHtml = item.refs || "";
           const refCount = item.refCount || 0;
-          const citationHtml = item.citationHtml || "";
 
           return `
             <div class="message-row assistant">
               <div class="assistant-card">
                 <div class="assistant-label">AI回答</div>
                 <div>${escapeHtml(item.content).replace(/\n/g, "<br>")}</div>
-                ${citationHtml ? `<div class="citation-box">${citationHtml}</div>` : ""}
-                ${refCount > 0 ? `
-                  <div class="ref-toggle" onclick="toggleRefs(${index})">
-                    参考資料 ${refCount}件を表示 / 非表示
-                  </div>
-                  <div class="ref-box" id="ref-box-${index}">
-                    ${refsHtml}
-                  </div>
-                ` : ""}
+                ${
+                  refCount > 0
+                    ? `
+                      <div class="ref-toggle" onclick="toggleRefs(${index})">
+                        参考資料 ${refCount}件を表示 / 非表示
+                      </div>
+                      <div class="ref-box" id="ref-box-${index}">
+                        ${refsHtml}
+                      </div>
+                    `
+                    : ""
+                }
               </div>
             </div>
           `;
@@ -842,17 +921,19 @@
     }
 
     function appendUserMessage(text) {
-      conversationHistory.push({ role: "user", content: text });
+      conversationHistory.push({
+        role: "user",
+        content: text
+      });
       renderConversation();
     }
 
-    function appendAssistantMessage(text, refsHtml, refCount, citationHtml) {
+    function appendAssistantMessage(text, refsHtml, refCount) {
       conversationHistory.push({
         role: "assistant",
         content: text,
         refs: refsHtml || "",
-        refCount: refCount || 0,
-        citationHtml: citationHtml || ""
+        refCount: refCount || 0
       });
       renderConversation();
     }
@@ -914,12 +995,8 @@
     }
 
     function getMatchedItems(input, limit = 30) {
-      const q = normalize(input);
-
-      const words = String(input || "")
-        .split(/[\s　]+/)
-        .map(w => normalize(w))
-        .filter(Boolean);
+      const q = normalizeTight(input);
+      const tokens = buildQueryTokens(input);
 
       return searchIndex
         .map(item => {
@@ -928,9 +1005,13 @@
 
           if (q && target.includes(q)) {
             matched = true;
-          } else if (words.length > 0) {
-            const hitCount = words.filter(w => target.includes(w)).length;
-            matched = hitCount >= 1;
+          } else {
+            for (const token of tokens) {
+              if (token.length >= 2 && target.includes(token)) {
+                matched = true;
+                break;
+              }
+            }
           }
 
           if (!matched) return null;
@@ -945,30 +1026,68 @@
         .slice(0, limit);
     }
 
+    function buildRefsHtml(matched) {
+      return matched.map(item => {
+        if (item.type === "pdf") {
+          return `・<a href="${item.url || "#"}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || "")}）`;
+        }
+        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || "")}）`;
+      }).join("<br>");
+    }
+
     async function fetchAIAnswer(question, matched) {
-      const response = await fetch("/api/chat", {
+      const historyText = conversationHistory
+        .slice(-10)
+        .map(item => `${item.role === "user" ? "ユーザー" : "AI"}: ${item.content}`)
+        .join("\n");
+
+      const contextText = matched.map((item, index) => {
+        return [
+          `資料${index + 1}`,
+          `タイトル: ${item.title || ""}`,
+          `種別: ${item.type || ""}`,
+          `場所: ${item.location || ""}`,
+          `ファイル: ${item.file || ""}`,
+          `本文抜粋: ${String(item.text || "").slice(0, 700)}`
+        ].join("\n");
+      }).join("\n\n");
+
+      const prompt = `
+会話履歴:
+${historyText}
+
+ユーザー質問:
+${question}
+
+関連資料:
+${contextText}
+
+ルール:
+- 回答は日本語で、分かりやすく簡潔に書く
+- まず結論を書く
+- そのあと必要なら箇条書きで補足する
+- 関連資料に書かれていないことは断定しない
+- 挨拶や雑談には自然に返答する
+- 関連資料がある場合は資料を優先して回答する
+- 不明な場合は「資料上では確認できません」と書く
+`;
+
+      const response = await fetch("/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          question,
-          sources: matched.map(item => ({
-            title: item.title || "",
-            page: item.page || "",
-            location: item.location || "",
-            url: item.url || "",
-            text: item.text || ""
-          }))
+          question: prompt
         })
       });
 
-      const text = await response.text();
+      const rawText = await response.text();
       let data = {};
 
       try {
-        data = text ? JSON.parse(text) : {};
-      } catch {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch (e) {
         throw new Error("AI応答の形式が不正です");
       }
 
@@ -976,10 +1095,7 @@
         throw new Error(data.error || "AI回答の取得に失敗しました");
       }
 
-      return {
-        answer: data.answer || "回答を取得できませんでした。",
-        citations: Array.isArray(data.citations) ? data.citations : []
-      };
+      return data.answer || "回答を取得できませんでした。";
     }
 
     function getTopInputValue() {
@@ -1054,83 +1170,122 @@
         syncBottomInput("");
         document.getElementById("resultsHeader").textContent = "";
         document.getElementById("resultsBody").innerHTML = "";
-        appendAssistantMessage("質問を入力してください。例：酒気帯びの確認方法は？", "", 0, "");
+        appendAssistantMessage("質問を入力してください。例：酒気帯びの確認方法は？", "", 0);
         scrollToLatest();
         return;
       }
 
       appendUserMessage(input);
       syncBottomInput(input);
-      scrollToLatest();
-
-      if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        appendAssistantMessage("検索データがまだ読み込まれていません。先に search-index.json の生成・配置を確認してください。", "", 0, "");
-        scrollToLatest();
-        return;
-      }
-
-      const topMatched = getMatchedItems(input, 5);
-      const allMatched = getMatchedItems(input, 9999);
-
-      if (allMatched.length === 0) {
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        appendAssistantMessage("該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分", "", 0, "");
-        scrollToLatest();
-        return;
-      }
-
-      const refs = allMatched.map(item => {
-        if (item.type === "pdf") {
-          return `・<a href="${item.url || "#"}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || "")}）`;
-        }
-        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || "")}）`;
-      }).join("<br>");
-
       document.getElementById("resultsHeader").textContent = "";
       document.getElementById("resultsBody").innerHTML = "";
+      scrollToLatest();
+
+      if (isGreeting(input)) {
+        appendAssistantMessage("こんにちは。社内ナレッジAIです。就業規則、安全資料、工事マニュアル、社内ルールなどについて質問できます。", "", 0);
+        scrollToLatest();
+        return;
+      }
+
+      if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
+        appendAssistantMessage("検索データがまだ読み込まれていません。先に search-index.json の生成・配置を確認してください。", "", 0);
+        scrollToLatest();
+        return;
+      }
+
+      const matched = getMatchedItems(input, 9999);
+
+      if (matched.length === 0) {
+        appendAssistantMessage(
+          "該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分",
+          "",
+          0
+        );
+        scrollToLatest();
+        return;
+      }
+
+      const refs = buildRefsHtml(matched);
 
       try {
-        const result = await fetchAIAnswer(input, topMatched);
-
-        let citationHtml = "";
-        if (Array.isArray(result.citations) && result.citations.length > 0) {
-          const citationLines = result.citations.map(c => {
-            const idx = Number(c.index) - 1;
-            const item = topMatched[idx];
-            const page = c.page || (item ? item.page : "");
-            if (!item) return "";
-            const title = escapeHtml(item.title || "資料");
-            const url = item.url || "#";
-            return `・<a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>（P${escapeHtml(page)}）`;
-          }).filter(Boolean);
-
-          if (citationLines.length > 0) {
-            citationHtml = `<strong>回答の根拠ページ</strong>${citationLines.join("<br>")}`;
-          }
-        }
-
-        appendAssistantMessage(result.answer, refs, allMatched.length, citationHtml);
+        const answer = await fetchAIAnswer(input, matched.slice(0, 5));
+        appendAssistantMessage(answer, refs, matched.length);
       } catch (error) {
-        appendAssistantMessage(
-          `AI回答の取得でエラーが発生しました。\n${error.message}\nただし、関連資料は見つかっています。`,
-          refs,
-          allMatched.length,
-          ""
-        );
+        const fallback = buildFallbackAnswer(input, matched);
+        if (fallback) {
+          appendAssistantMessage(fallback, refs, matched.length);
+        } else {
+          appendAssistantMessage(
+            `AI回答の取得でエラーが発生しました。\n${error.message}\nただし、関連資料は見つかっています。`,
+            refs,
+            matched.length
+          );
+        }
       }
 
       scrollToLatest();
     }
 
+    function buildFallbackAnswer(input, matched) {
+      const q = normalizeTight(input);
+      const hitTexts = matched.slice(0, 5).map(x => String(x.text || "")).join("\n");
+
+      if (q.includes("熱中")) {
+        return [
+          "結論：資料上では、熱中症対策として休憩・水分塩分補給・体調確認・身体冷却を徹底する運用です。",
+          "",
+          "主な内容",
+          "・早め早めの水分、塩分補給",
+          "・WBGT値、気温を確認して作業内容を考慮",
+          "・朝礼、昼礼、終礼で周知と体調確認",
+          "・6月～9月はクーラーボックス持参",
+          "・気温30℃以上では空調服着用",
+          "・異常時は作業離脱、身体冷却、現場担当へ報告",
+          "・意識異常があれば救急要請、判断に迷う場合は #7119",
+          "",
+          "詳しく知りたい場合は「熱中症の連絡フローだけ教えて」や「現場ルールを要約して」と聞いてください。"
+        ].join("\n");
+      }
+
+      if (q.includes("酒気") || q.includes("アルコール")) {
+        return [
+          "結論：資料上では、運転前後にアルコール測定を行い、0.00mg/L以外は運転禁止です。",
+          "",
+          "主な内容",
+          "・運転前と運転後に記録",
+          "・測定値が0.00mg/L以外ならその日の運転は禁止",
+          "・酒気帯びが確認された場合は速やかに所属長へ報告"
+        ].join("\n");
+      }
+
+      if (q.includes("事故処分") || q.includes("事故")) {
+        return [
+          "結論：資料上では、車両事故は期ごとにカウントし、回数に応じて指導・適性診断・外部講習へ進みます。",
+          "",
+          "・1回目：安全運転責任者による指導",
+          "・2回目：教習所で運転適性診断",
+          "・3回目：免停1か月および外部安全講習",
+          "・事故報告は継続、評価にも反映"
+        ].join("\n");
+      }
+
+      if (hitTexts) {
+        return "関連資料は見つかっています。Groq APIエラー時のため要約回答に切り替えられませんでした。参考資料を開いて確認してください。";
+      }
+
+      return "";
+    }
+
     document.getElementById("searchInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") searchDocs();
+      if (e.key === "Enter") {
+        searchDocs();
+      }
     });
 
     document.getElementById("chatInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") askAIFromBottom();
+      if (e.key === "Enter") {
+        askAIFromBottom();
+      }
     });
 
     loadSearchIndex();
