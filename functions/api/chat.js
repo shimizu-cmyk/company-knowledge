@@ -38,9 +38,9 @@ export async function onRequestPost(context) {
 
     const question = normalizeQuestion(rawQuestion);
 
-    // search-index.json を取得
+    // /json/search-index.json を取得
     const siteUrl = new URL(request.url).origin;
-    const indexRes = await fetch(`${siteUrl}/search-index.json`, {
+    const indexRes = await fetch(`${siteUrl}/json/search-index.json`, {
       headers: { "cache-control": "no-cache" }
     });
 
@@ -51,7 +51,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    let indexJson = [];
+    let indexJson;
     try {
       indexJson = await indexRes.json();
     } catch {
@@ -61,7 +61,12 @@ export async function onRequestPost(context) {
       );
     }
 
-    const docs = Array.isArray(indexJson) ? indexJson : [];
+    const docs = Array.isArray(indexJson)
+      ? indexJson
+      : Array.isArray(indexJson.records)
+        ? indexJson.records
+        : [];
+
     const matchedDocs = findRelevantDocs(question, docs, 5);
 
     const contextText = matchedDocs.length
@@ -70,8 +75,9 @@ export async function onRequestPost(context) {
             return [
               `【資料${i + 1}】`,
               `タイトル: ${doc.title || "無題"}`,
-              `カテゴリ: ${doc.category || ""}`,
+              `カテゴリ: ${doc.category || doc.type || ""}`,
               `URL: ${doc.url || ""}`,
+              `場所: ${doc.location || ""}`,
               `本文: ${truncate(doc.text || doc.content || "", 1800)}`
             ].join("\n");
           })
@@ -158,7 +164,7 @@ export async function onRequestPost(context) {
         references: matchedDocs.map((doc) => ({
           title: doc.title || "無題",
           url: doc.url || "#",
-          category: doc.category || "",
+          category: doc.category || doc.type || "",
           score: doc._score || 0
         }))
       },
@@ -200,8 +206,11 @@ function truncate(text, max = 1800) {
 
 function normalize(text) {
   return String(text || "")
+    .normalize("NFKC")
     .toLowerCase()
-    .replace(/\s+/g, " ")
+    .replace(/[\u30a1-\u30f6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+    .replace(/\s+/g, "")
+    .replace(/　/g, "")
     .trim();
 }
 
@@ -219,20 +228,23 @@ function findRelevantDocs(question, docs, limit = 5) {
 
   const scored = docs.map((doc) => {
     const title = normalize(doc.title || "");
-    const category = normalize(doc.category || "");
+    const category = normalize(doc.category || doc.type || "");
+    const location = normalize(doc.location || "");
     const text = normalize(doc.text || doc.content || "");
-    const combined = `${title} ${category} ${text}`;
+    const combined = `${title} ${category} ${location} ${text}`;
 
     let score = 0;
 
-    if (title.includes(q)) score += 80;
+    if (title.includes(q)) score += 100;
     if (category.includes(q)) score += 30;
-    if (text.includes(q)) score += 20;
+    if (location.includes(q)) score += 20;
+    if (text.includes(q)) score += 15;
 
     for (const token of qTokens) {
       if (token.length <= 1) continue;
       if (title.includes(token)) score += 12;
       if (category.includes(token)) score += 6;
+      if (location.includes(token)) score += 5;
       if (text.includes(token)) score += 3;
     }
 
