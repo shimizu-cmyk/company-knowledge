@@ -6,11 +6,13 @@ const require = createRequire(import.meta.url);
 const { PDFParse } = require("pdf-parse");
 
 const ROOT = process.cwd();
-const PDF_DIR = path.join(ROOT, "pdf");
+const PDF_DIR = path.join(ROOT, "pdf", "documents");
 const OUTPUT_DIR = path.join(ROOT, "search");
 const OUTPUT_FILE = path.join(OUTPUT_DIR, "search-index.json");
 
 function getAllPdfFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
+
   let results = [];
   const list = fs.readdirSync(dir, { withFileTypes: true });
 
@@ -28,7 +30,7 @@ function getAllPdfFiles(dir) {
 }
 
 function cleanText(text) {
-  return (text || "")
+  return String(text || "")
     .replace(/\r/g, "")
     .replace(/\n/g, " ")
     .replace(/\s+/g, " ")
@@ -47,31 +49,38 @@ async function extractPdfText(filePath) {
   }
 }
 
+function buildCategory(relativePath) {
+  const parts = relativePath.split("/");
+  if (parts.length >= 3) {
+    return parts[1];
+  }
+  return "documents";
+}
+
 async function main() {
-  console.log("start");
+  console.log("検索データ作成開始");
 
   if (!fs.existsSync(PDF_DIR)) {
-    console.log("pdf folder not found");
+    console.log("PDFフォルダが見つかりません:", PDF_DIR);
     return;
   }
 
   const pdfFiles = getAllPdfFiles(PDF_DIR);
-  console.log("pdf count:", pdfFiles.length);
+  console.log("PDF数:", pdfFiles.length);
 
   const records = [];
   let id = 1;
 
   for (const file of pdfFiles) {
     try {
-      console.log("parsing:", file);
+      console.log("解析中:", file);
 
       const text = await extractPdfText(file);
       const relative = path.relative(ROOT, file).replace(/\\/g, "/");
-      const parts = relative.split("/");
-      const category = parts.length > 2 ? parts[1] : "general";
+      const category = buildCategory(relative);
 
       records.push({
-        id: "pdf-" + id++,
+        id: `pdf-${id++}`,
         type: "pdf",
         title: path.basename(file, ".pdf"),
         category,
@@ -81,8 +90,8 @@ async function main() {
         content: text
       });
     } catch (e) {
-      console.log("parse failed:", file);
-      console.log(e.message);
+      console.log("解析失敗:", file);
+      console.log("理由:", e.message);
     }
   }
 
@@ -98,11 +107,12 @@ async function main() {
 
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2), "utf8");
 
-  console.log("done:", records.length);
-  console.log("output:", OUTPUT_FILE);
+  console.log("完了");
+  console.log("出力先:", OUTPUT_FILE);
+  console.log("総件数:", records.length);
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error("エラー:", err);
   process.exit(1);
 });
