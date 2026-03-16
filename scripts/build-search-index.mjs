@@ -38,6 +38,7 @@ function cleanText(text) {
 async function extractPdfText(filePath) {
   const buffer = fs.readFileSync(filePath);
   const parser = new PDFParse({ data: buffer });
+
   try {
     const result = await parser.getText();
     return cleanText(result.text);
@@ -76,9 +77,7 @@ async function main() {
         category,
         path: relative,
         pdfUrl: "/" + relative,
-        viewerUrl:
-          "/pdfjs-legacy/web/viewer.html?file=" +
-          encodeURIComponent("/" + relative),
+        viewerUrl: "/" + relative,
         content: text
       });
     } catch (e) {
