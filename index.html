@@ -636,7 +636,6 @@
 
     <section class="results-wrap" id="resultsWrap">
       <div class="conversation-wrap" id="conversationWrap"></div>
-
       <div class="results-header" id="resultsHeader"></div>
       <div class="results-list" id="resultsBody"></div>
     </section>
@@ -1016,7 +1015,7 @@ ${contextText}
 - 不明な場合は「資料上では確認できません」と書く
 `;
 
-      const response = await fetch("/chat", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -1055,8 +1054,7 @@ ${contextText}
       const top = matched.slice(0, 3);
       const lines = [];
       lines.push("関連資料は見つかっています。");
-      lines.push("APIエラー時のため要約回答に切り替えられませんでした。");
-      lines.push("参考資料を開いて確認してください。");
+      lines.push("AI応答でエラーが出たため、参考資料を表示しています。");
 
       const useful = top
         .map(item => `・${item.title || "無題"}（${item.location || ""}）`)
@@ -1186,7 +1184,6 @@ ${contextText}
         appendAssistantMessage(answer, refs, matched.length);
       } catch (error) {
         console.error(error);
-
         const fallback = createLocalSummaryAnswer(input, matched);
         appendAssistantMessage(fallback, refs, matched.length);
       }
