@@ -1,196 +1,245 @@
 import fs from "fs/promises";
 import path from "path";
-import * as XLSX from "xlsx";
+import { fileURLToPath } from "url";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
-const ROOT = process.cwd();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const PDF_DIR = path.join(ROOT, "pdf");
-const EXCEL_DIR = path.join(ROOT, "excel");
-const JSON_DIR = path.join(ROOT, "json");
-const OUTPUT_FILE = path.join(JSON_DIR, "search-index.json");
+const ROOT_DIR = __dirname;
+const PDF_DIR = path.join(ROOT_DIR, "pdf");
+const OUTPUT_DIR = path.join(ROOT_DIR, "json");
+const OUTPUT_FILE = path.join(OUTPUT_DIR, "search-index.json");
+
+const VIEWER_BASE = "/pdfjs-legacy/web/viewer.html?file=";
 
 async function main() {
-  console.log("検索データ作成開始");
+  console.log("検索インデックス生成開始...");
 
-  await ensureDir(JSON_DIR);
+  const pdfFiles = await walkPdfFiles(PDF_DIR);
 
-  const records = [];
-  let id = 1;
-
-  const pdfFiles = await getFiles(PDF_DIR, [".pdf"]);
-  const excelFiles = await getFiles(EXCEL_DIR, [".xlsx", ".xls"]);
-
-  console.log(`PDF数: ${pdfFiles.length}`);
-  console.log(`Excel数: ${excelFiles.length}`);
-
-  for (const file of pdfFiles) {
-    console.log(`PDF読込: ${file}`);
-    const items = await readPdf(file);
-    for (const item of items) {
-      item.id = id++;
-      records.push(item);
-    }
+  if (pdfFiles.length === 0) {
+    console.log("PDFが見つかりませんでした。");
+    await ensureDir(OUTPUT_DIR);
+    await fs.writeFile(
+      OUTPUT_FILE,
+      JSON.stringify(
+        {
+          generatedAt: new Date().toISOString(),
+          total: 0,
+          records: []
+        },
+        null,
+        2
+      ),
+      "utf-8"
+    );
+    return;
   }
 
-  for (const file of excelFiles) {
-    console.log(`Excel読込: ${file}`);
-    const items = await readExcel(file);
-    for (const item of items) {
-      item.id = id++;
-      records.push(item);
+  const records = [];
+  let idCounter = 1;
+
+  for (const absPath of pdfFiles) {
+    const relativePath = toPosix(path.relative(ROOT_DIR, absPath));
+    const fileName = path.basename(absPath);
+    const title = fileName.replace(/\.pdf$/i, "");
+
+    console.log(`処理中: ${relativePath}`);
+
+    try {
+      const pages = await extractPdfPages(absPath);
+
+      for (const page of pages) {
+        const cleanedText = cleanPageText(page.text);
+
+        if (!shouldKeepPage(cleanedText)) {
+          continue;
+        }
+
+        records.push({
+          type: "pdf",
+          title,
+          file: fileName,
+          path: relativePath,
+          location: `P${page.pageNumber}`,
+          page: page.pageNumber,
+          sheet: null,
+          row: null,
+          text: cleanedText,
+          url: buildViewerUrl(relativePath, page.pageNumber),
+          id: idCounter++
+        });
+      }
+    } catch (error) {
+      console.error(`PDF処理失敗: ${relativePath}`);
+      console.error(String(error));
     }
   }
 
   const output = {
     generatedAt: new Date().toISOString(),
     total: records.length,
-    records,
+    records
   };
 
+  await ensureDir(OUTPUT_DIR);
   await fs.writeFile(OUTPUT_FILE, JSON.stringify(output, null, 2), "utf-8");
 
-  console.log("完了");
+  console.log(`完了: ${records.length}件`);
   console.log(`出力先: ${OUTPUT_FILE}`);
-  console.log(`総件数: ${records.length}`);
 }
 
-async function ensureDir(dir) {
-  await fs.mkdir(dir, { recursive: true });
-}
+async function walkPdfFiles(dir) {
+  const result = [];
+  let entries = [];
 
-async function exists(dir) {
   try {
-    await fs.access(dir);
-    return true;
+    entries = await fs.readdir(dir, { withFileTypes: true });
   } catch {
-    return false;
+    return result;
   }
-}
-
-async function getFiles(dir, exts) {
-  if (!(await exists(dir))) return [];
-
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  const files = [];
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      const childFiles = await getFiles(fullPath, exts);
-      files.push(...childFiles);
+      const nested = await walkPdfFiles(fullPath);
+      result.push(...nested);
       continue;
     }
 
-    if (!entry.isFile()) continue;
-    if (entry.name.startsWith("~$")) continue;
-
-    const ext = path.extname(entry.name).toLowerCase();
-    if (exts.includes(ext)) {
-      files.push(fullPath);
+    if (entry.isFile() && /\.pdf$/i.test(entry.name)) {
+      result.push(fullPath);
     }
   }
 
-  return files;
+  return result.sort((a, b) => a.localeCompare(b, "ja"));
 }
 
-async function readPdf(filePath) {
-  const data = new Uint8Array(await fs.readFile(filePath));
-  const pdf = await pdfjsLib.getDocument({
-    data,
+async function extractPdfPages(filePath) {
+  const data = await fs.readFile(filePath);
+
+  const loadingTask = pdfjsLib.getDocument({
+    data: new Uint8Array(data),
     useWorkerFetch: false,
     isEvalSupported: false,
-    useSystemFonts: true,
-  }).promise;
+    useSystemFonts: true
+  });
 
-  const records = [];
+  const pdf = await loadingTask.promise;
+  const pages = [];
 
-  for (let page = 1; page <= pdf.numPages; page++) {
-    const p = await pdf.getPage(page);
-    const textContent = await p.getTextContent();
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
 
     const text = textContent.items
       .map(item => ("str" in item ? item.str : ""))
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
+      .join(" ");
 
-    if (!text) continue;
-
-    const fileName = path.basename(filePath);
-    const relPath = toPosix(path.relative(ROOT, filePath));
-
-    records.push({
-      type: "pdf",
-      title: removeExt(fileName),
-      file: fileName,
-      path: relPath,
-      location: `P${page}`,
-      page: page,
-      sheet: null,
-      row: null,
-      text: text,
-      url: `./pdfjs/web/viewer.html?file=${encodeURIComponent("/" + relPath)}#page=${page}`
+    pages.push({
+      pageNumber,
+      text
     });
   }
 
-  return records;
+  return pages;
 }
 
-async function readExcel(filePath) {
-  const workbook = XLSX.readFile(filePath, { raw: false });
-  const records = [];
-  const fileName = path.basename(filePath);
-  const relPath = toPosix(path.relative(ROOT, filePath));
+function cleanPageText(text) {
+  return String(text || "")
+    .replace(/\u0000/g, " ")
+    .replace(/[\u0001-\u0008\u000B-\u001F\u007F]/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\s*\n\s*/g, " ")
+    .replace(/　/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) continue;
+function shouldKeepPage(text) {
+  if (!text) return false;
 
-    const rows = XLSX.utils.sheet_to_json(sheet, {
-      header: 1,
-      defval: "",
-      blankrows: false,
-      raw: false,
-    });
+  const compact = text.replace(/\s+/g, "");
+  if (compact.length < 12) return false;
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = Array.isArray(rows[i]) ? rows[i] : [];
-      const values = row
-        .map(v => String(v ?? "").replace(/\s+/g, " ").trim())
-        .filter(v => v);
+  const japaneseMatches = text.match(/[ぁ-んァ-ン一-龠]/g) || [];
+  const latinMatches = text.match(/[A-Za-z]/g) || [];
+  const digitMatches = text.match(/[0-9０-９]/g) || [];
+  const symbolMatches = text.match(/[^ぁ-んァ-ン一-龠A-Za-z0-9０-９\s]/g) || [];
 
-      if (values.length === 0) continue;
+  const meaningfulCount =
+    japaneseMatches.length + latinMatches.length + digitMatches.length;
 
-      records.push({
-        type: "excel",
-        title: removeExt(fileName),
-        file: fileName,
-        path: relPath,
-        location: `${sheetName} / 行${i + 1}`,
-        page: null,
-        sheet: sheetName,
-        row: i + 1,
-        text: values.join(" | "),
-        url: null
-      });
-    }
+  if (meaningfulCount < 8) return false;
+
+  const symbolRatio = symbolMatches.length / Math.max(text.length, 1);
+  if (symbolRatio > 0.35) return false;
+
+  const japaneseRatio = japaneseMatches.length / Math.max(text.length, 1);
+  const latinRatio = latinMatches.length / Math.max(text.length, 1);
+
+  // 文字化け対策
+  const mojibakeHits = countMojibakePatterns(text);
+  if (mojibakeHits >= 8) return false;
+
+  // 中身が薄いページ対策
+  const lowValuePatterns = [
+    /^p\s*o\s*i\s*n\s*t\s*!?$/i,
+    /^point!?$/i,
+    /^copyright\.?$/i,
+    /^copyright/i
+  ];
+
+  const simplified = text
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (lowValuePatterns.some(re => re.test(simplified))) return false;
+
+  // 日本語も英字もほぼ無く、記号っぽいページを落とす
+  if (japaneseRatio < 0.02 && latinRatio < 0.05 && meaningfulCount < 25) {
+    return false;
   }
 
-  return records;
+  // point! だけ延々並ぶようなページを落とす
+  const pointCount = (simplified.match(/point!?/g) || []).length;
+  if (pointCount >= 3 && meaningfulCount < 35) {
+    return false;
+  }
+
+  return true;
 }
 
-function removeExt(name) {
-  return name.replace(/\.[^.]+$/, "");
+function countMojibakePatterns(text) {
+  const suspiciousChars = [
+    "ÿ", "¯", "×", "Û", "ß", "", "¼", "²", "ý", "ü", "ó", "÷", "þ", "", ""
+  ];
+
+  let count = 0;
+  for (const ch of suspiciousChars) {
+    count += (text.split(ch).length - 1);
+  }
+  return count;
+}
+
+function buildViewerUrl(relativePath, pageNumber) {
+  const filePath = "/" + toPosix(relativePath);
+  return `${VIEWER_BASE}${encodeURIComponent(filePath)}#page=${pageNumber}`;
 }
 
 function toPosix(p) {
   return p.split(path.sep).join("/");
 }
 
-main().catch(err => {
-  console.error("エラーが発生しました");
-  console.error(err);
+async function ensureDir(dir) {
+  await fs.mkdir(dir, { recursive: true });
+}
+
+main().catch(error => {
+  console.error("検索インデックス生成失敗");
+  console.error(error);
   process.exit(1);
 });
