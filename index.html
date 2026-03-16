@@ -663,7 +663,7 @@
 
     async function loadSearchIndex() {
       try {
-        const res = await fetch("json/search-index.json");
+        const res = await fetch("/search/search-index.json");
         if (!res.ok) {
           throw new Error("search-index.json の読み込みに失敗しました");
         }
@@ -717,11 +717,12 @@
     function buildSearchTarget(item) {
       return normalize([
         item.title,
-        item.file,
+        item.category,
         item.path,
         item.location,
-        item.text,
+        item.content,
         item.type,
+        item.file,
         item.sheet,
         item.row
       ].join(" "));
@@ -757,8 +758,8 @@
     function scoreItem(item, input) {
       const q = normalize(input);
       const title = normalize(item.title);
-      const location = normalize(item.location);
-      const text = normalize(item.text);
+      const location = normalize(item.location || item.category || "");
+      const text = normalize(item.content);
 
       let score = 0;
 
@@ -897,6 +898,11 @@
       return `${url}#search=${encodeURIComponent(q)}`;
     }
 
+    function getItemLink(item, keyword) {
+      const base = item.viewerUrl || item.pdfUrl || item.url || item.path || "#";
+      return addSearchParamToUrl(base, keyword);
+    }
+
     function renderResults(matched, input) {
       const resultsBody = document.getElementById("resultsBody");
       const resultsHeader = document.getElementById("resultsHeader");
@@ -916,15 +922,14 @@
       }
 
       resultsBody.innerHTML = matched.map(item => {
-        const snippet = escapeHtml(makeSnippet(item.text, input));
+        const snippet = escapeHtml(makeSnippet(item.content, input));
         const pathText = escapeHtml(item.path || "");
         const titleText = escapeHtml(item.title || "");
-        const fileText = escapeHtml(item.file || "");
-        const locationText = escapeHtml(item.location || "");
+        const fileText = escapeHtml(item.file || item.path || "");
+        const locationText = escapeHtml(item.location || item.category || "");
+        const pdfLink = getItemLink(item, input);
 
         if (item.type === "pdf") {
-          const pdfLink = addSearchParamToUrl(item.url || "#", input);
-
           return `
             <div class="result-item">
               <div class="result-path">${pathText}</div>
@@ -939,7 +944,7 @@
           <div class="result-item">
             <div class="result-path">${pathText}</div>
             <div class="result-title" style="color:#202124;cursor:default;text-decoration:none;">${titleText}</div>
-            <div class="result-meta">Excel / ${locationText} / ${fileText}</div>
+            <div class="result-meta">資料 / ${locationText} / ${fileText}</div>
             <div class="result-snippet">${snippet}</div>
           </div>
         `;
@@ -989,9 +994,9 @@
           `資料${index + 1}`,
           `タイトル: ${item.title || ""}`,
           `種別: ${item.type || ""}`,
-          `場所: ${item.location || ""}`,
-          `ファイル: ${item.file || ""}`,
-          `本文抜粋: ${String(item.text || "").slice(0, 700)}`
+          `場所: ${item.location || item.category || ""}`,
+          `ファイル: ${item.file || item.path || ""}`,
+          `本文抜粋: ${String(item.content || "").slice(0, 700)}`
         ].join("\n");
       }).join("\n\n");
 
@@ -1057,7 +1062,7 @@ ${contextText}
       lines.push("AI応答でエラーが出たため、参考資料を表示しています。");
 
       const useful = top
-        .map(item => `・${item.title || "無題"}（${item.location || ""}）`)
+        .map(item => `・${item.title || "無題"}（${item.location || item.category || ""}）`)
         .join("\n");
 
       if (useful) {
@@ -1170,10 +1175,10 @@ ${contextText}
 
       const refs = matched.map(item => {
         if (item.type === "pdf") {
-          const refLink = addSearchParamToUrl(item.url || "#", input);
-          return `・<a href="${refLink}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || "")}）`;
+          const refLink = getItemLink(item, input);
+          return `・<a href="${refLink}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || item.category || "")}）`;
         }
-        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || "")}）`;
+        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || item.category || "")}）`;
       }).join("<br>");
 
       document.getElementById("resultsHeader").textContent = "";
