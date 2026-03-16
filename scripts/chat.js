@@ -4,7 +4,7 @@ question = question.replace(/[ァ-ン]/g, s =>
 String.fromCharCode(s.charCodeAt(0) - 0x60)
 )
 
-const res = await fetch("/json/search-index.json")
+const res = await fetch("/search/search-index.json")
 const data = await res.json()
 
 let context = ""
