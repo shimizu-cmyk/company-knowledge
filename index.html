@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>TECHNOP@L-NET 社内ナレッジ</title>
+  <title>TECHNOP@L-NET 社内ナレッジAI</title>
   <meta name="description" content="社内PDF・規定・安全資料を検索できる社内ナレッジAI">
 
   <style>
@@ -12,1203 +12,371 @@
     }
 
     html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
       height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      background: #f8f9fb;
+      color: #1f2937;
     }
 
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-      background: #ffffff;
-      color: #202124;
       min-height: 100vh;
     }
 
     a {
       color: inherit;
+      text-decoration: none;
     }
 
-    .page {
+    .app {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-bottom: 0;
-    }
-
-    .page.with-chatbar {
-      padding-bottom: 92px;
     }
 
     .topbar {
+      height: 64px;
       display: flex;
-      justify-content: flex-end;
       align-items: center;
-      padding: 16px 24px;
-      font-size: 13px;
-      color: #5f6368;
+      justify-content: flex-end;
+      padding: 0 24px;
+      color: #6b7280;
+      font-size: 14px;
     }
 
     .hero {
       flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px 16px 40px;
-      transition: all 0.25s ease;
+      padding: 24px 20px 140px;
+      transition: all .25s ease;
     }
 
     .hero.compact {
-      display: block;
-      padding: 12px 16px 10px;
-      border-bottom: 1px solid #f1f3f4;
-      position: sticky;
-      top: 0;
-      background: #fff;
-      z-index: 40;
-    }
-
-    .hero-inner {
-      width: 100%;
-      max-width: 860px;
-      text-align: center;
-      margin: 0 auto;
-    }
-
-    .hero.compact .hero-inner {
-      max-width: 1100px;
-      text-align: left;
-    }
-
-    .hero-top-row {
-      display: block;
-    }
-
-    .hero.compact .hero-top-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .site-logo {
-      display: block;
-      max-width: 100%;
-      width: 520px;
-      height: auto;
-      margin: 0 auto 18px;
-      transition: all 0.25s ease;
-    }
-
-    .hero.compact .site-logo {
-      width: 170px;
-      margin: 0;
       flex: 0 0 auto;
+      justify-content: flex-start;
+      padding: 20px 20px 12px;
     }
 
-    .subtext {
+    .logo-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .logo {
+      width: min(420px, 78vw);
+      max-width: 420px;
+      display: block;
+      object-fit: contain;
+      transition: width .25s ease;
+    }
+
+    .hero.compact .logo {
+      width: 220px;
+      max-width: 220px;
+    }
+
+    .hero-sub {
+      margin-top: 18px;
+      color: #6b7280;
       font-size: 15px;
-      color: #5f6368;
-      margin: 0 0 28px;
-      line-height: 1.8;
+      text-align: center;
     }
 
-    .hero.compact .subtext {
+    .hero.compact .hero-sub {
       display: none;
     }
 
-    .search-shell {
+    .main {
       width: 100%;
-      max-width: 760px;
+      max-width: 1100px;
       margin: 0 auto;
+      padding: 0 20px 120px;
     }
 
-    .hero.compact .search-shell {
+    .back-row {
+      margin: 0 0 14px;
       display: none;
     }
 
-    .search-box {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 62px;
-      border: 1px solid #dfe1e5;
-      border-radius: 31px;
-      padding: 0 18px;
-      background: #fff;
-      box-shadow: 0 1px 6px rgba(32,33,36,.08);
+    .back-row.show {
+      display: block;
     }
 
-    .search-box:hover,
-    .search-box:focus-within {
-      box-shadow: 0 2px 10px rgba(32,33,36,.16);
-      border-color: rgba(223,225,229,0);
-    }
-
-    .search-icon {
-      font-size: 18px;
-      color: #9aa0a6;
-      flex: 0 0 auto;
-    }
-
-    .search-box input {
-      flex: 1;
+    .back-btn {
       border: none;
-      outline: none;
-      font-size: 18px;
-      color: #202124;
       background: transparent;
-      min-width: 0;
-    }
-
-    .search-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 24px;
-      flex-wrap: wrap;
-    }
-
-    .action-btn {
-      min-width: 128px;
-      border: 1px solid #f8f9fa;
-      background: #f8f9fa;
-      color: #3c4043;
-      font-size: 14px;
-      padding: 11px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .action-btn:hover {
-      border-color: #dadce0;
-      box-shadow: 0 1px 1px rgba(0,0,0,.1);
-    }
-
-    .status-note {
-      margin-top: 18px;
-      font-size: 13px;
-      color: #5f6368;
-    }
-
-    .hero.compact .status-note {
-      display: none;
-    }
-
-    .category-toggle-wrap {
-      margin-top: 20px;
-    }
-
-    .hero.compact .category-toggle-wrap {
-      display: none;
-    }
-
-    .category-panel {
-      display: none;
-      margin-top: 18px;
-    }
-
-    .category-panel.active {
-      display: block;
-    }
-
-    .quick-links {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .chip {
-      display: inline-block;
-      padding: 9px 14px;
-      border-radius: 999px;
-      background: #f1f3f4;
-      color: #3c4043;
-      font-size: 13px;
-      text-decoration: none;
-    }
-
-    .chip:hover {
-      background: #e8eaed;
-    }
-
-    .category-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-top: 16px;
-    }
-
-    .category-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 16px;
-      text-decoration: none;
-      text-align: left;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-
-    .category-card:hover {
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    }
-
-    .category-card h3 {
-      margin: 0 0 8px;
-      font-size: 17px;
-      color: #1f2937;
-    }
-
-    .category-card p {
-      margin: 0;
-      font-size: 13px;
-      color: #5f6368;
-      line-height: 1.6;
-    }
-
-    .home-link {
-      display: none;
-      max-width: 760px;
-      margin: 14px auto 0;
-      padding: 0 16px;
-      width: 100%;
-      font-size: 14px;
-    }
-
-    .home-link.active {
-      display: block;
-    }
-
-    .home-link button {
-      border: none;
-      background: none;
-      color: #1a73e8;
+      color: #2563eb;
+      font-size: 15px;
       cursor: pointer;
       padding: 0;
-      font-size: 14px;
     }
 
-    .home-link button:hover {
-      text-decoration: underline;
-    }
-
-    .results-wrap {
-      display: none;
-      width: 100%;
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 12px 16px 30px;
-    }
-
-    .results-wrap.active {
-      display: block;
-    }
-
-    .conversation-wrap {
-      max-width: 760px;
-      margin: 0 auto 18px;
-    }
-
-    .message-row {
+    .conversation {
       display: flex;
-      margin-bottom: 16px;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 160px;
     }
 
-    .message-row.user {
+    .message {
+      display: flex;
+      width: 100%;
+    }
+
+    .message.user {
       justify-content: flex-end;
     }
 
-    .message-row.assistant {
+    .message.assistant {
       justify-content: flex-start;
     }
 
-    .user-bubble {
-      max-width: min(78%, 620px);
-      background: #1a73e8;
-      color: #fff;
-      padding: 12px 16px;
-      border-radius: 18px 18px 4px 18px;
-      font-size: 14px;
-      line-height: 1.7;
+    .bubble {
+      max-width: min(820px, 92%);
+      padding: 16px 18px;
+      border-radius: 18px;
+      line-height: 1.8;
       white-space: pre-wrap;
       word-break: break-word;
-      box-shadow: 0 2px 8px rgba(26,115,232,.18);
+      box-shadow: 0 6px 22px rgba(15, 23, 42, 0.06);
     }
 
-    .assistant-card {
-      max-width: min(82%, 700px);
-      background: #f8f9fa;
-      color: #374151;
-      padding: 14px 16px;
-      border-radius: 18px 18px 18px 4px;
-      font-size: 14px;
-      line-height: 1.8;
+    .message.user .bubble {
+      background: #2563eb;
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.assistant .bubble {
+      background: #fff;
+      color: #1f2937;
       border: 1px solid #e5e7eb;
-      word-break: break-word;
+      border-bottom-left-radius: 6px;
     }
 
-    .assistant-label {
-      font-size: 12px;
+    .bubble-title {
       font-weight: 700;
-      color: #5f6368;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      color: #374151;
     }
 
-    .ref-toggle {
-      display: inline-block;
+    .refs {
       margin-top: 12px;
-      font-size: 13px;
-      color: #1a73e8;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .ref-box {
-      display: none;
-      margin-top: 10px;
-      padding-top: 10px;
       border-top: 1px solid #e5e7eb;
-      font-size: 13px;
-      line-height: 1.7;
+      padding-top: 10px;
     }
 
-    .ref-box.active {
-      display: block;
-    }
-
-    .results-header {
-      max-width: 760px;
-      margin: 0 auto 2px;
+    .refs-toggle {
+      background: transparent;
+      border: none;
+      color: #2563eb;
+      padding: 0;
+      cursor: pointer;
       font-size: 14px;
-      color: #5f6368;
     }
 
-    .results-list {
-      max-width: 760px;
-      margin: 0 auto;
-    }
-
-    .result-item {
-      padding: 18px 0 20px;
-      border-bottom: 1px solid #f1f3f4;
-    }
-
-    .result-path {
-      font-size: 13px;
-      color: #5f6368;
-      margin-bottom: 6px;
-      word-break: break-all;
-    }
-
-    .result-title {
-      display: inline-block;
-      font-size: 22px;
-      line-height: 1.3;
-      color: #1a0dab;
-      text-decoration: none;
-      margin-bottom: 6px;
-    }
-
-    .result-title:hover {
-      text-decoration: underline;
-    }
-
-    .result-meta {
-      font-size: 13px;
-      color: #5f6368;
-      margin-bottom: 6px;
-      line-height: 1.6;
-    }
-
-    .result-snippet {
-      font-size: 14px;
-      color: #4d5156;
-      line-height: 1.7;
-      white-space: normal;
-      word-break: break-word;
-    }
-
-    .chatbar {
+    .refs-list {
+      margin-top: 10px;
       display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .refs-list.show {
+      display: flex;
+    }
+
+    .ref-item {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .ref-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .ref-meta {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .ref-snippet {
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 8px;
+      line-height: 1.7;
+    }
+
+    .ref-link {
+      color: #2563eb;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .empty-note {
+      color: #6b7280;
+      font-size: 14px;
+      text-align: center;
+      padding: 26px 0 10px;
+    }
+
+    .bottom-bar {
       position: fixed;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(255,255,255,0.96);
-      border-top: 1px solid #e5e7eb;
+      background: rgba(248, 249, 251, 0.95);
       backdrop-filter: blur(8px);
-      z-index: 60;
-      padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid #e5e7eb;
+      padding: 14px 16px 18px;
     }
 
-    .chatbar.active {
-      display: block;
-    }
-
-    .chatbar-inner {
-      max-width: 760px;
+    .input-wrap {
+      width: 100%;
+      max-width: 1100px;
       margin: 0 auto;
       display: flex;
-      gap: 8px;
+      gap: 12px;
       align-items: center;
     }
 
-    .chatbar-input {
+    .query-input {
       flex: 1;
-      min-height: 46px;
-      border: 1px solid #dfe1e5;
-      border-radius: 23px;
-      padding: 0 16px;
-      font-size: 15px;
+      height: 56px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 0 22px;
+      font-size: 18px;
       outline: none;
       background: #fff;
     }
 
-    .chatbar-input:focus {
-      box-shadow: 0 2px 8px rgba(32,33,36,.12);
-      border-color: #c7d2fe;
+    .query-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
     }
 
-    .chatbar-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .chatbar-search,
-    .chatbar-ai {
-      height: 44px;
-      border-radius: 22px;
+    .btn {
+      height: 56px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: none;
+      font-size: 17px;
+      font-weight: 700;
       cursor: pointer;
-      font-size: 14px;
-      padding: 0 16px;
       white-space: nowrap;
     }
 
-    .chatbar-search {
-      border: 1px solid #dfe1e5;
+    .btn-search {
       background: #fff;
-      color: #3c4043;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
     }
 
-    .chatbar-search:hover {
-      background: #f8f9fa;
-    }
-
-    .chatbar-ai {
-      border: none;
-      background: #1a73e8;
+    .btn-ai {
+      background: #2563eb;
       color: #fff;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
     }
 
-    .chatbar-ai:hover {
-      background: #1765cc;
+    .status {
+      width: 100%;
+      max-width: 1100px;
+      margin: 8px auto 0;
+      color: #6b7280;
+      font-size: 13px;
+      min-height: 18px;
+      padding: 0 4px;
     }
 
-    @media (max-width: 900px) {
-      .category-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 640px) {
-      .site-logo {
-        width: 300px;
+    @media (max-width: 768px) {
+      .topbar {
+        height: 56px;
+        padding: 0 16px;
       }
 
-      .hero.compact .site-logo {
-        width: 130px;
+      .main {
+        padding: 0 14px 120px;
       }
 
-      .result-title {
-        font-size: 19px;
+      .input-wrap {
+        gap: 8px;
       }
 
-      .category-grid {
-        grid-template-columns: 1fr;
+      .query-input {
+        font-size: 16px;
+        height: 52px;
+        padding: 0 18px;
       }
 
-      .user-bubble,
-      .assistant-card {
-        max-width: 88%;
+      .btn {
+        height: 52px;
+        font-size: 15px;
+        padding: 0 16px;
       }
 
-      .chatbar-inner {
-        flex-wrap: wrap;
+      .hero {
+        padding: 18px 16px 120px;
       }
 
-      .chatbar-actions {
-        width: 100%;
+      .hero.compact .logo {
+        width: 180px;
       }
 
-      .chatbar-search,
-      .chatbar-ai {
-        flex: 1;
+      .bubble {
+        max-width: 100%;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page" id="pageRoot">
-    <div class="topbar">
-      <div>社内検索</div>
-    </div>
+  <div class="app">
+    <div class="topbar">社内検索</div>
 
-    <section class="hero" id="heroSection">
-      <div class="hero-inner">
-        <div class="hero-top-row">
-          <img src="img/logo.png" alt="TECHNOP@L-NET" class="site-logo">
-
-          <div class="search-shell">
-            <div class="subtext">
-              社内PDF・規定・安全資料・業務資料を横断検索<br>
-              キーワード検索でも、AI質問でも使えます。
-            </div>
-
-            <div class="search-box">
-              <div class="search-icon">🔍</div>
-              <input
-                type="text"
-                id="searchInput"
-                placeholder="酒気帯び / 熱中症 / 就業規則 / 事故処分 / LED"
-                autocomplete="off"
-              >
-            </div>
-
-            <div class="search-actions">
-              <button class="action-btn" onclick="searchDocs()">検索</button>
-              <button class="action-btn" onclick="askAI()">AIに質問</button>
-              <button class="action-btn" onclick="toggleCategories()" id="categoryToggleBtn">カテゴリを表示</button>
-            </div>
-
-            <div class="status-note" id="loadingNote">検索データを読み込み中です...</div>
-
-            <div class="category-toggle-wrap">
-              <div class="category-panel" id="categoryPanel">
-                <div class="quick-links">
-                  <a class="chip" href="pages/manual.html">工事マニュアル</a>
-                  <a class="chip" href="pages/rules.html">社内規定</a>
-                  <a class="chip" href="pages/safety.html">安全資料</a>
-                  <a class="chip" href="pages/system.html">システム資料</a>
-                  <a class="chip" href="pages/it.html">IT資料</a>
-                  <a class="chip" href="pages/documents.html">業務資料</a>
-                </div>
-
-                <div class="category-grid">
-                  <a class="category-card" href="pages/rules.html">
-                    <h3>社内規定</h3>
-                    <p>就業ルール、申請関係、社内ルールを確認</p>
-                  </a>
-
-                  <a class="category-card" href="pages/safety.html">
-                    <h3>安全資料</h3>
-                    <p>安全衛生、KY、事故防止、注意事項を確認</p>
-                  </a>
-
-                  <a class="category-card" href="pages/manual.html">
-                    <h3>工事マニュアル</h3>
-                    <p>IP・LED・TVなど現場マニュアルを確認</p>
-                  </a>
-
-                  <a class="category-card" href="pages/it.html">
-                    <h3>IT・端末</h3>
-                    <p>スマホ、システム、社内IT利用手順を確認</p>
-                  </a>
-
-                  <a class="category-card" href="pages/documents.html">
-                    <h3>業務資料</h3>
-                    <p>各種資料、提出書類、参考文書を確認</p>
-                  </a>
-
-                  <a class="category-card" href="pages/system.html">
-                    <h3>システム資料</h3>
-                    <p>運用フロー、社内システム、管理資料を確認</p>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <section id="hero" class="hero">
+      <div class="logo-wrap">
+        <img class="logo" src="./img/logo.png" alt="TECHNOP@L-NET AI">
       </div>
+      <div class="hero-sub">社内PDF・規定・安全資料を検索 / AIで質問</div>
     </section>
 
-    <div class="home-link" id="homeLink">
-      <button onclick="goHome()">← トップに戻る</button>
-    </div>
-
-    <section class="results-wrap" id="resultsWrap">
-      <div class="conversation-wrap" id="conversationWrap"></div>
-      <div class="results-header" id="resultsHeader"></div>
-      <div class="results-list" id="resultsBody"></div>
-    </section>
-  </div>
-
-  <div class="chatbar" id="chatbar">
-    <div class="chatbar-inner">
-      <input
-        type="text"
-        id="chatInput"
-        class="chatbar-input"
-        placeholder="質問や検索語を入力..."
-        autocomplete="off"
-      >
-      <div class="chatbar-actions">
-        <button class="chatbar-search" onclick="searchDocsFromBottom()">検索</button>
-        <button class="chatbar-ai" onclick="askAIFromBottom()">AIに質問</button>
+    <main class="main">
+      <div id="backRow" class="back-row">
+        <button id="backBtn" class="back-btn">← トップに戻る</button>
       </div>
+
+      <div id="conversation" class="conversation">
+        <div id="emptyNote" class="empty-note">下の入力欄から検索またはAIに質問してください。</div>
+      </div>
+    </main>
+
+    <div class="bottom-bar">
+      <div class="input-wrap">
+        <input
+          id="queryInput"
+          class="query-input"
+          type="text"
+          placeholder="キーワードを入力"
+          autocomplete="off"
+        >
+        <button id="searchBtn" class="btn btn-search">検索</button>
+        <button id="askBtn" class="btn btn-ai">AIに質問</button>
+      </div>
+      <div id="status" class="status"></div>
     </div>
   </div>
 
-  <script>
-    let searchIndex = [];
-    const conversationHistory = [];
-
-    async function loadSearchIndex() {
-      try {
-        const res = await fetch("/search/search-index.json");
-        if (!res.ok) {
-          throw new Error("search-index.json の読み込みに失敗しました");
-        }
-
-        const data = await res.json();
-        searchIndex = Array.isArray(data.records) ? data.records : [];
-
-        const loadingNote = document.getElementById("loadingNote");
-        loadingNote.textContent = `検索データ読込完了：${searchIndex.length}件`;
-      } catch (err) {
-        console.error(err);
-        const loadingNote = document.getElementById("loadingNote");
-        loadingNote.textContent = "検索データの読み込みに失敗しました";
-      }
-    }
-
-    function toggleCategories() {
-      const panel = document.getElementById("categoryPanel");
-      const btn = document.getElementById("categoryToggleBtn");
-      const isActive = panel.classList.contains("active");
-
-      if (isActive) {
-        panel.classList.remove("active");
-        btn.textContent = "カテゴリを表示";
-      } else {
-        panel.classList.add("active");
-        btn.textContent = "カテゴリを閉じる";
-      }
-    }
-
-    function normalize(text) {
-      return String(text || "")
-        .normalize("NFKC")
-        .toLowerCase()
-        .replace(/[\u30a1-\u30f6]/g, function(ch) {
-          return String.fromCharCode(ch.charCodeAt(0) - 0x60);
-        })
-        .replace(/\s+/g, "")
-        .replace(/　/g, "");
-    }
-
-    function escapeHtml(str) {
-      return String(str || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function buildSearchTarget(item) {
-      return normalize([
-        item.title,
-        item.category,
-        item.path,
-        item.location,
-        item.content,
-        item.type,
-        item.file,
-        item.sheet,
-        item.row
-      ].join(" "));
-    }
-
-    function makeSnippet(text, keyword) {
-      const raw = String(text || "");
-      if (!raw) return "";
-
-      const q = String(keyword || "").trim();
-      if (!q) {
-        return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
-      }
-
-      const normalizedRaw = normalize(raw);
-      const normalizedQ = normalize(q);
-      const idx = normalizedRaw.indexOf(normalizedQ);
-
-      if (idx === -1) {
-        return raw.slice(0, 140) + (raw.length > 140 ? "..." : "");
-      }
-
-      const start = Math.max(0, idx - 50);
-      const end = Math.min(raw.length, idx + q.length + 90);
-      let snippet = raw.slice(start, end);
-
-      if (start > 0) snippet = "..." + snippet;
-      if (end < raw.length) snippet = snippet + "...";
-
-      return snippet;
-    }
-
-    function scoreItem(item, input) {
-      const q = normalize(input);
-      const title = normalize(item.title);
-      const location = normalize(item.location || item.category || "");
-      const text = normalize(item.content);
-
-      let score = 0;
-
-      if (q && title.includes(q)) score += 120;
-      if (q && location.includes(q)) score += 40;
-      if (q && text.includes(q)) score += 20;
-
-      const words = String(input || "")
-        .split(/[\s　]+/)
-        .map(w => normalize(w))
-        .filter(Boolean);
-
-      for (const w of words) {
-        if (title.includes(w)) score += 35;
-        if (location.includes(w)) score += 10;
-        if (text.includes(w)) score += 6;
-      }
-
-      return score;
-    }
-
-    function showResultsLayout() {
-      document.getElementById("heroSection").classList.add("compact");
-      document.getElementById("resultsWrap").classList.add("active");
-      document.getElementById("homeLink").classList.add("active");
-      document.getElementById("chatbar").classList.add("active");
-      document.getElementById("pageRoot").classList.add("with-chatbar");
-    }
-
-    function syncBottomInput(value) {
-      document.getElementById("chatInput").value = value || "";
-    }
-
-    function syncTopInput(value) {
-      document.getElementById("searchInput").value = value || "";
-    }
-
-    function goHome() {
-      conversationHistory.length = 0;
-      document.getElementById("heroSection").classList.remove("compact");
-      document.getElementById("resultsWrap").classList.remove("active");
-      document.getElementById("homeLink").classList.remove("active");
-      document.getElementById("chatbar").classList.remove("active");
-      document.getElementById("pageRoot").classList.remove("with-chatbar");
-      document.getElementById("resultsHeader").innerHTML = "";
-      document.getElementById("resultsBody").innerHTML = "";
-      document.getElementById("conversationWrap").innerHTML = "";
-      syncTopInput("");
-      syncBottomInput("");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function renderConversation() {
-      const wrap = document.getElementById("conversationWrap");
-
-      wrap.innerHTML = conversationHistory.map((item, index) => {
-        if (item.role === "user") {
-          return `
-            <div class="message-row user">
-              <div class="user-bubble">${escapeHtml(item.content)}</div>
-            </div>
-          `;
-        }
-
-        if (item.role === "assistant") {
-          const refsHtml = item.refs || "";
-          const refCount = item.refCount || 0;
-
-          return `
-            <div class="message-row assistant">
-              <div class="assistant-card">
-                <div class="assistant-label">AI回答</div>
-                <div>${escapeHtml(item.content).replace(/\n/g, "<br>")}</div>
-                ${
-                  refCount > 0
-                    ? `
-                      <div class="ref-toggle" onclick="toggleRefs(${index})">
-                        参考資料 ${refCount}件を表示 / 非表示
-                      </div>
-                      <div class="ref-box" id="ref-box-${index}">
-                        ${refsHtml}
-                      </div>
-                    `
-                    : ""
-                }
-              </div>
-            </div>
-          `;
-        }
-
-        return "";
-      }).join("");
-    }
-
-    function toggleRefs(index) {
-      const el = document.getElementById(`ref-box-${index}`);
-      if (!el) return;
-      el.classList.toggle("active");
-    }
-
-    function appendUserMessage(text) {
-      conversationHistory.push({
-        role: "user",
-        content: text
-      });
-      renderConversation();
-    }
-
-    function appendAssistantMessage(text, refsHtml, refCount) {
-      conversationHistory.push({
-        role: "assistant",
-        content: text,
-        refs: refsHtml || "",
-        refCount: refCount || 0
-      });
-      renderConversation();
-    }
-
-    function scrollToLatest() {
-      setTimeout(() => {
-        window.scrollTo({
-          top: document.body.scrollHeight,
-          behavior: "smooth"
-        });
-      }, 80);
-    }
-
-    function addSearchParamToUrl(url, keyword) {
-      if (!url) return "#";
-      const q = String(keyword || "").trim();
-      if (!q) return url;
-
-      if (url.includes("#")) {
-        return `${url}&search=${encodeURIComponent(q)}`;
-      }
-      return `${url}#search=${encodeURIComponent(q)}`;
-    }
-
-    function getItemLink(item, keyword) {
-      const base = item.viewerUrl || item.pdfUrl || item.url || item.path || "#";
-      return addSearchParamToUrl(base, keyword);
-    }
-
-    function renderResults(matched, input) {
-      const resultsBody = document.getElementById("resultsBody");
-      const resultsHeader = document.getElementById("resultsHeader");
-
-      resultsHeader.textContent = `${matched.length} 件の結果`;
-
-      if (matched.length === 0) {
-        resultsBody.innerHTML = `
-          <div class="result-item">
-            <div class="result-snippet">
-              該当する資料が見つかりませんでした。<br>
-              例：酒気帯び / 熱中症 / 就業規則 / 事故処分 / LED
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      resultsBody.innerHTML = matched.map(item => {
-        const snippet = escapeHtml(makeSnippet(item.content, input));
-        const pathText = escapeHtml(item.path || "");
-        const titleText = escapeHtml(item.title || "");
-        const fileText = escapeHtml(item.file || item.path || "");
-        const locationText = escapeHtml(item.location || item.category || "");
-        const pdfLink = getItemLink(item, input);
-
-        if (item.type === "pdf") {
-          return `
-            <div class="result-item">
-              <div class="result-path">${pathText}</div>
-              <a class="result-title" href="${pdfLink}" target="_blank" rel="noopener noreferrer">${titleText}</a>
-              <div class="result-meta">PDF / ${locationText} / ${fileText}</div>
-              <div class="result-snippet">${snippet}</div>
-            </div>
-          `;
-        }
-
-        return `
-          <div class="result-item">
-            <div class="result-path">${pathText}</div>
-            <div class="result-title" style="color:#202124;cursor:default;text-decoration:none;">${titleText}</div>
-            <div class="result-meta">資料 / ${locationText} / ${fileText}</div>
-            <div class="result-snippet">${snippet}</div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function getMatchedItems(input, limit = 30) {
-      const q = normalize(input);
-
-      const words = String(input || "")
-        .split(/[\s　]+/)
-        .map(w => normalize(w))
-        .filter(Boolean);
-
-      return searchIndex
-        .map(item => {
-          const target = buildSearchTarget(item);
-          let matched = false;
-
-          if (q && target.includes(q)) {
-            matched = true;
-          } else if (words.length > 0) {
-            const hitCount = words.filter(w => target.includes(w)).length;
-            matched = hitCount >= 1;
-          }
-
-          if (!matched) return null;
-
-          return {
-            ...item,
-            _score: scoreItem(item, input)
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => b._score - a._score)
-        .slice(0, limit);
-    }
-
-    async function fetchAIAnswer(question, matched) {
-      const historyText = conversationHistory
-        .slice(-10)
-        .map(item => `${item.role === "user" ? "ユーザー" : "AI"}: ${item.content}`)
-        .join("\n");
-
-      const contextText = matched.map((item, index) => {
-        return [
-          `資料${index + 1}`,
-          `タイトル: ${item.title || ""}`,
-          `種別: ${item.type || ""}`,
-          `場所: ${item.location || item.category || ""}`,
-          `ファイル: ${item.file || item.path || ""}`,
-          `本文抜粋: ${String(item.content || "").slice(0, 700)}`
-        ].join("\n");
-      }).join("\n\n");
-
-      const prompt = `
-会話履歴:
-${historyText}
-
-ユーザー質問:
-${question}
-
-関連資料:
-${contextText}
-
-ルール:
-- 回答は日本語で、分かりやすく簡潔に書く
-- まず結論を書く
-- そのあと必要なら箇条書きで補足する
-- 関連資料に書かれている内容を優先する
-- 挨拶や雑談だけでも自然に返答する
-- 関連資料に書かれていないことは断定しない
-- 不明な場合は「資料上では確認できません」と書く
-`;
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          question: prompt
-        })
-      });
-
-      const text = await response.text();
-      let data = {};
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch (e) {
-        throw new Error("AI応答の形式が不正です");
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || "AI回答の取得に失敗しました");
-      }
-
-      return data.answer || "回答を取得できませんでした。";
-    }
-
-    function createLocalSummaryAnswer(question, matched) {
-      const q = String(question || "").trim();
-
-      if (!q) {
-        return "質問を入力してください。";
-      }
-
-      if (matched.length === 0) {
-        return "該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分";
-      }
-
-      const top = matched.slice(0, 3);
-      const lines = [];
-      lines.push("関連資料は見つかっています。");
-      lines.push("AI応答でエラーが出たため、参考資料を表示しています。");
-
-      const useful = top
-        .map(item => `・${item.title || "無題"}（${item.location || item.category || ""}）`)
-        .join("\n");
-
-      if (useful) {
-        lines.push("");
-        lines.push("候補資料:");
-        lines.push(useful);
-      }
-
-      return lines.join("\n");
-    }
-
-    function getTopInputValue() {
-      return document.getElementById("searchInput").value.trim();
-    }
-
-    function getBottomInputValue() {
-      return document.getElementById("chatInput").value.trim();
-    }
-
-    function searchDocsFromBottom() {
-      const value = getBottomInputValue();
-      syncTopInput(value);
-      searchDocs(value);
-    }
-
-    function askAIFromBottom() {
-      const value = getBottomInputValue();
-      syncTopInput(value);
-      askAI(value);
-    }
-
-    function searchDocs(forcedInput) {
-      const input = typeof forcedInput === "string" ? forcedInput.trim() : getTopInputValue();
-
-      if (!input) {
-        showResultsLayout();
-        appendUserMessage("検索キーワードを入力してください");
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = `
-          <div class="result-item">
-            <div class="result-snippet">検索キーワードを入力してください。</div>
-          </div>
-        `;
-        syncBottomInput("");
-        scrollToLatest();
-        return;
-      }
-
-      if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
-        showResultsLayout();
-        appendUserMessage(input);
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = `
-          <div class="result-item">
-            <div class="result-snippet">
-              検索データがまだ読み込まれていません。<br>
-              search-index.json の生成や配置を確認してください。
-            </div>
-          </div>
-        `;
-        syncBottomInput(input);
-        scrollToLatest();
-        return;
-      }
-
-      const matched = getMatchedItems(input, 9999);
-      showResultsLayout();
-      appendUserMessage(input);
-      renderResults(matched, input);
-      syncBottomInput(input);
-      scrollToLatest();
-    }
-
-    async function askAI(forcedInput) {
-      const input = typeof forcedInput === "string" ? forcedInput.trim() : getTopInputValue();
-
-      showResultsLayout();
-
-      if (!input) {
-        appendUserMessage("質問を入力してください");
-        syncBottomInput("");
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        appendAssistantMessage("質問を入力してください。例：酒気帯びの確認方法は？", "", 0);
-        scrollToLatest();
-        return;
-      }
-
-      appendUserMessage(input);
-      syncBottomInput(input);
-      scrollToLatest();
-
-      if (!Array.isArray(searchIndex) || searchIndex.length === 0) {
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        appendAssistantMessage("検索データがまだ読み込まれていません。先に search-index.json の生成・配置を確認してください。", "", 0);
-        scrollToLatest();
-        return;
-      }
-
-      const matched = getMatchedItems(input, 9999);
-
-      if (matched.length === 0) {
-        document.getElementById("resultsHeader").textContent = "";
-        document.getElementById("resultsBody").innerHTML = "";
-        appendAssistantMessage("該当する資料が見つかりませんでした。\n別の言い方で検索してください。\n例：就業規則 / 熱中症 / 酒気帯び / 事故処分", "", 0);
-        scrollToLatest();
-        return;
-      }
-
-      const refs = matched.map(item => {
-        if (item.type === "pdf") {
-          const refLink = getItemLink(item, input);
-          return `・<a href="${refLink}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>（${escapeHtml(item.location || item.category || "")}）`;
-        }
-        return `・${escapeHtml(item.title)}（${escapeHtml(item.location || item.category || "")}）`;
-      }).join("<br>");
-
-      document.getElementById("resultsHeader").textContent = "";
-      document.getElementById("resultsBody").innerHTML = "";
-
-      try {
-        const answer = await fetchAIAnswer(input, matched.slice(0, 5));
-        appendAssistantMessage(answer, refs, matched.length);
-      } catch (error) {
-        console.error(error);
-        const fallback = createLocalSummaryAnswer(input, matched);
-        appendAssistantMessage(fallback, refs, matched.length);
-      }
-
-      scrollToLatest();
-    }
-
-    document.getElementById("searchInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        searchDocs();
-      }
-    });
-
-    document.getElementById("chatInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        askAIFromBottom();
-      }
-    });
-
-    loadSearchIndex();
-  </script>
+  <script src="./chat.js"></script>
 </body>
 </html>
