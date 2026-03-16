@@ -1,237 +1,143 @@
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders()
+  });
+}
+
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
 
-    const body = await request.json().catch(() => ({}));
-    const question = String(body?.question || "").trim();
-    const sources = Array.isArray(body?.sources) ? body.sources : [];
+    if (!env.GROQ_API_KEY) {
+      return jsonResponse(
+        { error: "GROQ_API_KEY が設定されていません" },
+        500
+      );
+    }
+
+    let body = {};
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse(
+        { error: "リクエストJSONの形式が不正です" },
+        400
+      );
+    }
+
+    const question = String(body.question || "").trim();
 
     if (!question) {
-      return json(
+      return jsonResponse(
         { error: "質問が空です" },
         400
       );
     }
 
-    const apiKey = env.GROQ_API_KEY;
-    if (!apiKey) {
-      return json(
-        { error: "GROQ_API_KEY が未設定です" },
-        500
-      );
-    }
-
-    const trimmedSources = sources.slice(0, 5).map((s, i) => {
-      const title = String(s?.title || `資料${i + 1}`);
-      const page = s?.page ?? "";
-      const location = String(s?.location || "");
-      const url = String(s?.url || "");
-      const text = cleanText(String(s?.text || "")).slice(0, 2200);
-
-      return {
-        index: i + 1,
-        title,
-        page,
-        location,
-        url,
-        text
-      };
-    });
-
-    const sourceText = trimmedSources.map((s) => {
-      return [
-        `【資料${s.index}】`,
-        `title: ${s.title}`,
-        `page: ${s.page || ""}`,
-        `location: ${s.location || ""}`,
-        `url: ${s.url || ""}`,
-        `text: ${s.text || ""}`
-      ].join("\n");
-    }).join("\n\n");
-
-    const systemPrompt = `
-あなたは社内ナレッジAIです。
-与えられた資料だけを根拠に、日本語で簡潔かつ分かりやすく回答してください。
-
-ルール:
-- 資料に書いてある内容を優先する
-- 資料にないことを断定しない
-- 不明な場合は「資料内では確認できません」と述べる
-- 回答は自然な日本語にする
-- 最後に citations を必ず付ける
-- citations は、使った資料番号とページ番号を配列で返す
-- 必ず JSON のみ返す
-- JSON 形式は次の通り:
-{
-  "answer": "回答文",
-  "citations": [
-    { "index": 1, "page": 3 },
-    { "index": 2, "page": 5 }
-  ]
-}
-`.trim();
-
-    const userPrompt = `
-質問:
-${question}
-
-参考資料:
-${sourceText}
-`.trim();
+    const groqPayload = {
+      model: "llama-3.1-8b-instant",
+      temperature: 0.2,
+      max_tokens: 1000,
+      messages: [
+        {
+          role: "system",
+          content: [
+            "あなたは社内ナレッジAIです。",
+            "必ず日本語で回答してください。",
+            "以下のルールを守ってください。",
+            "",
+            "【会話ルール】",
+            "- 挨拶や雑談には自然に返答する",
+            "- 不自然に『資料上では確認できません』ばかり言わない",
+            "- 普通の会話なら普通に会話する",
+            "",
+            "【資料質問ルール】",
+            "- ユーザー質問の中に関連資料が含まれている場合は、その内容を優先して回答する",
+            "- 回答は分かりやすく簡潔にする",
+            "- まず結論を書く",
+            "- そのあと必要なら箇条書きで補足する",
+            "- 資料に書かれていないことは断定しない",
+            "- 不明な場合だけ『資料上では確認できません』と書く",
+            "",
+            "【表現ルール】",
+            "- 上から目線にしない",
+            "- 日本語は自然でやわらかく",
+            "- 長すぎず、短すぎず",
+            "- 社内向けAIとして実用的に答える"
+          ].join("\n")
+        },
+        {
+          role: "user",
+          content: question
+        }
+      ]
+    };
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
+        "Authorization": `Bearer ${env.GROQ_API_KEY}`,
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
-      })
+      body: JSON.stringify(groqPayload)
     });
 
-    const groqText = await groqRes.text();
+    const rawText = await groqRes.text();
+
+    let groqData = {};
+    try {
+      groqData = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      return jsonResponse(
+        {
+          error: "Groqの応答JSONが不正です",
+          detail: rawText.slice(0, 1000)
+        },
+        502
+      );
+    }
 
     if (!groqRes.ok) {
-      return json(
+      return jsonResponse(
         {
           error: "Groq APIエラー",
-          detail: safeText(groqText, 1200)
+          detail: groqData
         },
-        500
+        502
       );
     }
 
-    let groqJson;
-    try {
-      groqJson = JSON.parse(groqText);
-    } catch {
-      return json(
-        {
-          error: "Groq APIの応答JSON解析に失敗しました",
-          detail: safeText(groqText, 1200)
-        },
-        500
-      );
-    }
+    const answer =
+      groqData?.choices?.[0]?.message?.content?.trim() ||
+      "回答を取得できませんでした。";
 
-    const content = groqJson?.choices?.[0]?.message?.content;
-    if (!content) {
-      return json(
-        {
-          error: "Groq APIの応答本文が空です",
-          detail: groqJson
-        },
-        500
-      );
-    }
-
-    let parsed;
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      parsed = extractJson(content);
-    }
-
-    if (!parsed || typeof parsed !== "object") {
-      return json(
-        {
-          error: "AI回答のJSON解析に失敗しました",
-          detail: safeText(content, 1200)
-        },
-        500
-      );
-    }
-
-    const answer = String(parsed.answer || "回答を取得できませんでした。").trim();
-    const citations = normalizeCitations(parsed.citations, trimmedSources);
-
-    return json({
-      answer,
-      citations
-    });
+    return jsonResponse({ answer }, 200);
   } catch (error) {
-    return json(
+    return jsonResponse(
       {
-        error: "サーバー内部エラー",
-        detail: error?.message || String(error)
+        error: "サーバーエラー",
+        detail: String(error)
       },
       500
     );
   }
 }
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data, null, 2), {
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
     status,
     headers: {
-      "Content-Type": "application/json; charset=UTF-8",
-      "Cache-Control": "no-store"
+      "Content-Type": "application/json; charset=utf-8",
+      ...corsHeaders()
     }
   });
 }
 
-function cleanText(text) {
-  return String(text || "")
-    .replace(/\u0000/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function safeText(text, max = 1000) {
-  const s = String(text || "");
-  return s.length > max ? s.slice(0, max) + "..." : s;
-}
-
-function extractJson(text) {
-  const raw = String(text || "").trim();
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-
-  if (start === -1 || end === -1 || end <= start) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw.slice(start, end + 1));
-  } catch {
-    return null;
-  }
-}
-
-function normalizeCitations(citations, sources) {
-  if (!Array.isArray(citations)) return [];
-
-  const maxIndex = sources.length;
-
-  const normalized = citations
-    .map((c) => {
-      const index = Number(c?.index);
-      if (!Number.isFinite(index) || index < 1 || index > maxIndex) {
-        return null;
-      }
-
-      const src = sources[index - 1];
-      const page = c?.page ?? src?.page ?? "";
-
-      return {
-        index,
-        page
-      };
-    })
-    .filter(Boolean);
-
-  const seen = new Set();
-  return normalized.filter((c) => {
-    const key = `${c.index}-${c.page}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
+  };
 }
