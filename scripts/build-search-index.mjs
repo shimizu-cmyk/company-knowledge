@@ -1,133 +1,109 @@
 import fs from "fs";
 import path from "path";
-import * as pdfParse from "pdf-parse";
+import { createRequire } from "module";
 
-const ROOT_DIR = process.cwd();
-const PDF_DIR = path.join(ROOT_DIR, "pdf");
-const OUTPUT_DIR = path.join(ROOT_DIR, "search");
+const require = createRequire(import.meta.url);
+const { PDFParse } = require("pdf-parse");
+
+const ROOT = process.cwd();
+const PDF_DIR = path.join(ROOT, "pdf");
+const OUTPUT_DIR = path.join(ROOT, "search");
 const OUTPUT_FILE = path.join(OUTPUT_DIR, "search-index.json");
-
-function normalizeText(text) {
-  return (text || "")
-    .replace(/\r/g, "")
-    .replace(/\n+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function getAllPdfFiles(dir) {
   let results = [];
+  const list = fs.readdirSync(dir, { withFileTypes: true });
 
-  if (!fs.existsSync(dir)) {
-    return results;
-  }
+  for (const item of list) {
+    const full = path.join(dir, item.name);
 
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-
-    if (entry.isDirectory()) {
-      results = results.concat(getAllPdfFiles(fullPath));
-    } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".pdf")) {
-      results.push(fullPath);
+    if (item.isDirectory()) {
+      results = results.concat(getAllPdfFiles(full));
+    } else if (item.name.toLowerCase().endsWith(".pdf")) {
+      results.push(full);
     }
   }
 
   return results;
 }
 
-function getCategoryFromPdfPath(filePath) {
-  const relativePath = path.relative(PDF_DIR, filePath);
-  const parts = relativePath.split(path.sep);
-
-  if (parts.length >= 2) {
-    return parts[0];
-  }
-
-  return "uncategorized";
-}
-
-function buildPdfUrl(filePath) {
-  const relativePath = path.relative(ROOT_DIR, filePath).split(path.sep).join("/");
-  return `/${relativePath}`;
-}
-
-function buildViewerUrl(filePath) {
-  const pdfUrl = buildPdfUrl(filePath);
-  return `/pdfjs-legacy/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
-}
-
-function buildTitle(filePath) {
-  return path.basename(filePath, ".pdf");
+function cleanText(text) {
+  return (text || "")
+    .replace(/\r/g, "")
+    .replace(/\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function extractPdfText(filePath) {
   const buffer = fs.readFileSync(filePath);
-  const parser = pdfParse.default || pdfParse;
-  const data = await parser(buffer);
-  return normalizeText(data.text);
+  const parser = new PDFParse({ data: buffer });
+  try {
+    const result = await parser.getText();
+    return cleanText(result.text);
+  } finally {
+    await parser.destroy();
+  }
 }
 
 async function main() {
-  console.log("検索インデックス生成開始...");
+  console.log("start");
 
   if (!fs.existsSync(PDF_DIR)) {
-    console.log("pdfフォルダが見つかりませんでした。");
+    console.log("pdf folder not found");
     return;
   }
 
   const pdfFiles = getAllPdfFiles(PDF_DIR);
+  console.log("pdf count:", pdfFiles.length);
 
-  if (pdfFiles.length === 0) {
-    console.log("PDFが見つかりませんでした。");
-    return;
-  }
+  const records = [];
+  let id = 1;
 
-  const index = [];
-  let count = 0;
-
-  for (const filePath of pdfFiles) {
+  for (const file of pdfFiles) {
     try {
-      console.log(`解析中: ${path.relative(ROOT_DIR, filePath)}`);
+      console.log("parsing:", file);
 
-      const text = await extractPdfText(filePath);
-      const title = buildTitle(filePath);
-      const category = getCategoryFromPdfPath(filePath);
-      const pdfUrl = buildPdfUrl(filePath);
-      const viewerUrl = buildViewerUrl(filePath);
-      const relativePath = path.relative(ROOT_DIR, filePath).split(path.sep).join("/");
+      const text = await extractPdfText(file);
+      const relative = path.relative(ROOT, file).replace(/\\/g, "/");
+      const parts = relative.split("/");
+      const category = parts.length > 2 ? parts[1] : "general";
 
-      index.push({
-        id: `pdf-${count + 1}`,
+      records.push({
+        id: "pdf-" + id++,
         type: "pdf",
-        title,
+        title: path.basename(file, ".pdf"),
         category,
-        path: relativePath,
-        pdfUrl,
-        viewerUrl,
-        content: text,
+        path: relative,
+        pdfUrl: "/" + relative,
+        viewerUrl:
+          "/pdfjs-legacy/web/viewer.html?file=" +
+          encodeURIComponent("/" + relative),
+        content: text
       });
-
-      count++;
-    } catch (error) {
-      console.error(`PDF解析失敗: ${filePath}`);
-      console.error(error.message);
+    } catch (e) {
+      console.log("parse failed:", file);
+      console.log(e.message);
     }
   }
+
+  const output = {
+    generatedAt: new Date().toISOString(),
+    total: records.length,
+    records
+  };
 
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(index, null, 2), "utf-8");
+  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(output, null, 2), "utf8");
 
-  console.log(`完了: ${count}件のPDFをインデックス化しました。`);
-  console.log(`出力先: ${OUTPUT_FILE}`);
+  console.log("done:", records.length);
+  console.log("output:", OUTPUT_FILE);
 }
 
-main().catch((error) => {
-  console.error("検索インデックス生成中にエラーが発生しました。");
-  console.error(error);
+main().catch((err) => {
+  console.error(err);
   process.exit(1);
 });
