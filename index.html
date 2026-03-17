@@ -3,33 +3,48 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>TECHNOP@L-NET 社内ナレッジ</title>
+  <title>TECHNOP@L-NET 社内ナレッジAI</title>
   <meta name="description" content="社内PDF・規定・安全資料を検索できる社内ナレッジAI">
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-    html, body { height: 100%; }
-
-    body {
+    html, body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Yu Gothic", sans-serif;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
       background: #ffffff;
       color: #202124;
     }
 
-    .page {
+    body {
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .app {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
     .topbar {
+      height: 64px;
       display: flex;
+      align-items: center;
       justify-content: flex-end;
-      padding: 20px;
+      padding: 0 24px;
       color: #5f6368;
       font-size: 14px;
+      flex-shrink: 0;
     }
 
     .hero {
@@ -38,120 +53,582 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding-bottom: 160px;
+      padding: 24px 20px 180px;
+      transition: all .25s ease;
+    }
+
+    .hero.compact {
+      flex: 0 0 auto;
+      justify-content: flex-start;
+      padding: 18px 20px 10px;
+    }
+
+    .logo-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
     }
 
     .logo {
-      width: 400px;
-      max-width: 80%;
+      width: min(420px, 78vw);
+      max-width: 420px;
+      display: block;
+      object-fit: contain;
+      transition: width .25s ease;
     }
 
-    .subtitle {
-      margin-top: 15px;
+    .hero.compact .logo {
+      width: 220px;
+      max-width: 220px;
+    }
+
+    .hero-sub {
+      margin-top: 18px;
       color: #5f6368;
+      font-size: 15px;
+      text-align: center;
     }
 
-    /* ★カテゴリUI */
-    .category-row {
-      margin-top: 20px;
+    .hero.compact .hero-sub {
+      display: none;
+    }
+
+    .hero-search {
+      width: 100%;
+      max-width: 760px;
+      margin-top: 28px;
+      transition: all .25s ease;
+    }
+
+    .hero.compact .hero-search {
+      display: none;
+    }
+
+    .search-box {
+      width: 100%;
+      min-height: 56px;
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      border: 1px solid #dfe1e5;
+      border-radius: 999px;
+      padding: 0 14px 0 20px;
+      box-shadow: 0 1px 6px rgba(32,33,36,.08);
+      transition: box-shadow .2s ease, border-color .2s ease;
     }
 
-    .category-btn {
+    .search-box:focus-within,
+    .search-box:hover {
+      box-shadow: 0 2px 10px rgba(32,33,36,.14);
+      border-color: #d0d7de;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 0;
+      height: 54px;
+      border: none;
+      outline: none;
+      font-size: 18px;
+      background: transparent;
+      color: #202124;
+    }
+
+    .search-input::placeholder {
+      color: #9aa0a6;
+    }
+
+    .hero-actions {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .main-btn {
+      height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
       border: 1px solid #dadce0;
       background: #fff;
-      border-radius: 20px;
-      padding: 8px 16px;
-      cursor: pointer;
+      color: #3c4043;
       font-size: 14px;
+      cursor: pointer;
     }
 
-    .category-btn:hover {
-      background: #f1f3f4;
+    .main-btn:hover {
+      background: #f8f9fa;
+      border-color: #cfd3d7;
     }
 
-    .content {
-      max-width: 900px;
+    .main-btn.primary {
+      background: #1a73e8;
+      color: #fff;
+      border-color: #1a73e8;
+      box-shadow: 0 1px 3px rgba(26,115,232,.25);
+    }
+
+    .main-btn.primary:hover {
+      background: #1765cc;
+      border-color: #1765cc;
+    }
+
+    .category-wrap {
+      position: relative;
+    }
+
+    .category-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 220px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(15,23,42,.12);
+      padding: 10px;
+      display: none;
+      z-index: 50;
+    }
+
+    .category-menu.show {
+      display: block;
+    }
+
+    .category-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #374151;
+      cursor: pointer;
+    }
+
+    .category-item:hover {
+      background: #f3f4f6;
+    }
+
+    .main {
+      width: 100%;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 0 20px 120px;
     }
 
-    .bottom-area {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      background: #fff;
-      border-top: 1px solid #e5e7eb;
-      padding: 15px;
+    .back-row {
+      margin: 0 0 14px;
+      display: none;
     }
 
-    .input-row {
-      max-width: 900px;
+    .back-row.show {
+      display: block;
+    }
+
+    .back-btn {
+      border: none;
+      background: transparent;
+      color: #1a73e8;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .conversation {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 160px;
+    }
+
+    .message {
+      display: flex;
+      width: 100%;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message.assistant {
+      justify-content: flex-start;
+    }
+
+    .bubble {
+      max-width: min(820px, 92%);
+      padding: 16px 18px;
+      border-radius: 18px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 6px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .message.user .bubble {
+      background: #1a73e8;
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.assistant .bubble {
+      background: #fff;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+      border-bottom-left-radius: 6px;
+    }
+
+    .bubble-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .refs {
+      margin-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
+    }
+
+    .refs-toggle {
+      background: transparent;
+      border: none;
+      color: #1a73e8;
+      padding: 0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .refs-list {
+      margin-top: 10px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .refs-list.show {
+      display: flex;
+    }
+
+    .ref-item {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .ref-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .ref-meta {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .ref-snippet {
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 8px;
+      line-height: 1.7;
+    }
+
+    .ref-link {
+      color: #1a73e8;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .empty-note {
+      color: #6b7280;
+      font-size: 14px;
+      text-align: center;
+      padding: 26px 0 10px;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #e5e7eb;
+      padding: 14px 16px 18px;
+    }
+
+    .input-wrap {
+      width: 100%;
+      max-width: 1100px;
       margin: 0 auto;
       display: flex;
-      gap: 10px;
+      gap: 12px;
+      align-items: center;
     }
 
     .query-input {
       flex: 1;
-      height: 50px;
-      border-radius: 25px;
-      border: 1px solid #ccc;
-      padding: 0 20px;
+      height: 56px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 0 22px;
+      font-size: 18px;
+      outline: none;
+      background: #fff;
+    }
+
+    .query-input:focus {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 4px rgba(26,115,232,.12);
     }
 
     .btn {
-      height: 50px;
-      border-radius: 25px;
+      height: 56px;
+      padding: 0 22px;
+      border-radius: 999px;
       border: none;
-      padding: 0 20px;
+      font-size: 17px;
+      font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
     }
 
     .btn-search {
-      background: #eee;
+      background: #fff;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
     }
 
     .btn-ai {
       background: #1a73e8;
       color: #fff;
+      box-shadow: 0 8px 20px rgba(26,115,232,.2);
+    }
+
+    .status {
+      width: 100%;
+      max-width: 1100px;
+      margin: 8px auto 0;
+      color: #6b7280;
+      font-size: 13px;
+      min-height: 18px;
+      padding: 0 4px;
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        height: 56px;
+        padding: 0 16px;
+      }
+
+      .hero {
+        padding: 18px 16px 160px;
+      }
+
+      .hero.compact .logo {
+        width: 180px;
+      }
+
+      .hero-search {
+        max-width: 100%;
+        margin-top: 22px;
+      }
+
+      .search-box {
+        min-height: 52px;
+        padding: 0 12px 0 16px;
+      }
+
+      .search-input {
+        height: 50px;
+        font-size: 16px;
+      }
+
+      .hero-actions {
+        gap: 10px;
+      }
+
+      .main {
+        padding: 0 14px 120px;
+      }
+
+      .input-wrap {
+        gap: 8px;
+      }
+
+      .query-input {
+        font-size: 16px;
+        height: 52px;
+        padding: 0 18px;
+      }
+
+      .btn {
+        height: 52px;
+        font-size: 15px;
+        padding: 0 16px;
+      }
+
+      .bubble {
+        max-width: 100%;
+      }
+
+      .category-menu {
+        left: 0;
+        transform: none;
+        min-width: 200px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-
+  <div class="app">
     <div class="topbar">社内検索</div>
 
-    <section class="hero">
-      <img src="./img/logo.png" class="logo">
-      <div class="subtitle">社内PDF・規定・安全資料を検索 / AIで質問</div>
+    <section id="hero" class="hero">
+      <div class="logo-wrap">
+        <img class="logo" src="./img/logo.png" alt="TECHNOP@L-NET AI">
+      </div>
 
-      <!-- ★カテゴリ -->
-      <div class="category-row">
-        <button class="category-btn">全て</button>
-        <button class="category-btn">書類</button>
-        <button class="category-btn">安全</button>
-        <button class="category-btn">規定</button>
+      <div class="hero-sub">社内PDF・規定・安全資料を検索 / AIで質問</div>
+
+      <div class="hero-search">
+        <div class="search-box">
+          <input
+            id="heroQueryInput"
+            class="search-input"
+            type="text"
+            placeholder="キーワードを入力"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="hero-actions">
+          <div class="category-wrap">
+            <button id="categoryToggleBtn" class="main-btn" type="button">カテゴリ表示</button>
+
+            <div id="categoryMenu" class="category-menu">
+              <button class="category-item" type="button" data-category="">全て</button>
+              <button class="category-item" type="button" data-category="documents">documents</button>
+              <button class="category-item" type="button" data-category="it">it</button>
+              <button class="category-item" type="button" data-category="manual">manual</button>
+              <button class="category-item" type="button" data-category="rules">rules</button>
+              <button class="category-item" type="button" data-category="safety">safety</button>
+              <button class="category-item" type="button" data-category="system">system</button>
+            </div>
+          </div>
+
+          <button id="heroSearchBtn" class="main-btn" type="button">検索</button>
+          <button id="heroAskBtn" class="main-btn primary" type="button">AIに質問</button>
+        </div>
       </div>
     </section>
 
-    <main class="content">
-      <div id="conversation"></div>
+    <main class="main">
+      <div id="backRow" class="back-row">
+        <button id="backBtn" class="back-btn">← トップに戻る</button>
+      </div>
+
+      <div id="conversation" class="conversation">
+        <div id="emptyNote" class="empty-note">下の入力欄から検索またはAIに質問してください。</div>
+      </div>
     </main>
 
-    <div class="bottom-area">
-      <div class="input-row">
-        <input class="query-input" placeholder="キーワードを入力">
-        <button class="btn btn-search">検索</button>
-        <button class="btn btn-ai">AIに質問</button>
+    <div class="bottom-bar">
+      <div class="input-wrap">
+        <input
+          id="queryInput"
+          class="query-input"
+          type="text"
+          placeholder="キーワードを入力"
+          autocomplete="off"
+        >
+        <button id="searchBtn" class="btn btn-search">検索</button>
+        <button id="askBtn" class="btn btn-ai">AIに質問</button>
       </div>
+      <div id="status" class="status"></div>
     </div>
-
   </div>
+
+  <script>
+    const heroQueryInput = document.getElementById("heroQueryInput");
+    const bottomQueryInput = document.getElementById("queryInput");
+    const heroSearchBtn = document.getElementById("heroSearchBtn");
+    const heroAskBtn = document.getElementById("heroAskBtn");
+    const bottomSearchBtn = document.getElementById("searchBtn");
+    const bottomAskBtn = document.getElementById("askBtn");
+    const categoryToggleBtn = document.getElementById("categoryToggleBtn");
+    const categoryMenu = document.getElementById("categoryMenu");
+
+    function syncInputs(from, to) {
+      if (!from || !to) return;
+      to.value = from.value;
+    }
+
+    if (heroQueryInput && bottomQueryInput) {
+      heroQueryInput.addEventListener("input", () => syncInputs(heroQueryInput, bottomQueryInput));
+      bottomQueryInput.addEventListener("input", () => syncInputs(bottomQueryInput, heroQueryInput));
+    }
+
+    if (heroSearchBtn && bottomSearchBtn) {
+      heroSearchBtn.addEventListener("click", () => {
+        syncInputs(heroQueryInput, bottomQueryInput);
+        bottomSearchBtn.click();
+      });
+    }
+
+    if (heroAskBtn && bottomAskBtn) {
+      heroAskBtn.addEventListener("click", () => {
+        syncInputs(heroQueryInput, bottomQueryInput);
+        bottomAskBtn.click();
+      });
+    }
+
+    if (heroQueryInput && bottomSearchBtn) {
+      heroQueryInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          syncInputs(heroQueryInput, bottomQueryInput);
+          bottomSearchBtn.click();
+        }
+      });
+    }
+
+    if (categoryToggleBtn && categoryMenu) {
+      categoryToggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        categoryMenu.classList.toggle("show");
+      });
+
+      document.querySelectorAll(".category-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const category = btn.dataset.category || "";
+          categoryToggleBtn.textContent = category ? `カテゴリ: ${category}` : "カテゴリ表示";
+
+          if (heroQueryInput) {
+            if (category) {
+              heroQueryInput.value = category;
+              syncInputs(heroQueryInput, bottomQueryInput);
+            }
+          }
+
+          categoryMenu.classList.remove("show");
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!categoryMenu.contains(e.target) && !categoryToggleBtn.contains(e.target)) {
+          categoryMenu.classList.remove("show");
+        }
+      });
+    }
+  </script>
 
   <script src="./chat.js"></script>
 </body>
