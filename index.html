@@ -7,40 +7,29 @@
   <meta name="description" content="社内PDF・規定・安全資料を検索できる社内ナレッジAI">
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Yu Gothic", sans-serif;
       background: #ffffff;
       color: #202124;
-      min-height: 100vh;
-    }
-
-    a {
-      color: inherit;
     }
 
     .page {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-bottom: 0;
     }
 
     .topbar {
       display: flex;
       justify-content: flex-end;
-      align-items: center;
-      padding: 20px 28px 0;
-      font-size: 14px;
+      padding: 20px;
       color: #5f6368;
+      font-size: 14px;
     }
 
     .hero {
@@ -49,321 +38,119 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 16px 180px;
-      transition: all .25s ease;
-    }
-
-    .hero.compact {
-      flex: 0 0 auto;
-      padding: 20px 16px 12px;
-      justify-content: flex-start;
-    }
-
-    .logo-wrap {
-      text-align: center;
+      padding-bottom: 160px;
     }
 
     .logo {
-      width: min(460px, 82vw);
-      max-width: 460px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-      transition: all .25s ease;
-    }
-
-    .hero.compact .logo {
-      width: 220px;
-      max-width: 220px;
+      width: 400px;
+      max-width: 80%;
     }
 
     .subtitle {
-      margin-top: 18px;
-      text-align: center;
+      margin-top: 15px;
       color: #5f6368;
-      font-size: 15px;
     }
 
-    .hero.compact .subtitle {
-      display: none;
+    /* ★カテゴリUI */
+    .category-row {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .category-btn {
+      border: 1px solid #dadce0;
+      background: #fff;
+      border-radius: 20px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .category-btn:hover {
+      background: #f1f3f4;
     }
 
     .content {
-      width: 100%;
-      max-width: 980px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 0 16px 140px;
-    }
-
-    .back-row {
-      display: none;
-      margin-bottom: 12px;
-    }
-
-    .back-row.show {
-      display: block;
-    }
-
-    .back-btn {
-      border: none;
-      background: transparent;
-      color: #1a73e8;
-      font-size: 14px;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .conversation {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      min-height: 120px;
-    }
-
-    .message {
-      display: flex;
-      width: 100%;
-    }
-
-    .message.user {
-      justify-content: flex-end;
-    }
-
-    .message.assistant {
-      justify-content: flex-start;
-    }
-
-    .bubble {
-      max-width: min(820px, 92%);
-      padding: 16px 18px;
-      border-radius: 18px;
-      line-height: 1.8;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .message.user .bubble {
-      background: #1a73e8;
-      color: #fff;
-      border-bottom-right-radius: 6px;
-    }
-
-    .message.assistant .bubble {
-      background: #f8f9fa;
-      color: #202124;
-      border: 1px solid #e0e0e0;
-      border-bottom-left-radius: 6px;
-    }
-
-    .bubble-title {
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .refs {
-      margin-top: 12px;
-      border-top: 1px solid #e0e0e0;
-      padding-top: 10px;
-    }
-
-    .refs-toggle {
-      background: transparent;
-      border: none;
-      color: #1a73e8;
-      padding: 0;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .refs-list {
-      margin-top: 10px;
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .refs-list.show {
-      display: flex;
-    }
-
-    .ref-item {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .ref-title {
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .ref-meta {
-      font-size: 12px;
-      color: #5f6368;
-      margin-bottom: 8px;
-    }
-
-    .ref-snippet {
-      font-size: 14px;
-      color: #374151;
-      margin-bottom: 8px;
-      line-height: 1.7;
-    }
-
-    .ref-link {
-      color: #1a73e8;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .empty-note {
-      color: #5f6368;
-      font-size: 14px;
-      text-align: center;
-      padding: 26px 0 10px;
+      padding: 0 20px 120px;
     }
 
     .bottom-area {
       position: fixed;
-      left: 0;
-      right: 0;
       bottom: 0;
-      background: #ffffff;
+      width: 100%;
+      background: #fff;
       border-top: 1px solid #e5e7eb;
-      padding: 16px;
+      padding: 15px;
     }
 
     .input-row {
-      width: 100%;
-      max-width: 980px;
+      max-width: 900px;
       margin: 0 auto;
       display: flex;
       gap: 10px;
-      align-items: center;
     }
 
     .query-input {
       flex: 1;
-      height: 56px;
-      border: 1px solid #dadce0;
-      border-radius: 28px;
+      height: 50px;
+      border-radius: 25px;
+      border: 1px solid #ccc;
       padding: 0 20px;
-      font-size: 17px;
-      outline: none;
-      background: #fff;
-    }
-
-    .query-input:focus {
-      border-color: #1a73e8;
-      box-shadow: 0 0 0 3px rgba(26,115,232,.12);
     }
 
     .btn {
-      height: 56px;
-      border-radius: 28px;
+      height: 50px;
+      border-radius: 25px;
       border: none;
       padding: 0 20px;
-      font-size: 16px;
-      font-weight: 700;
       cursor: pointer;
-      white-space: nowrap;
     }
 
     .btn-search {
-      background: #f1f3f4;
-      color: #202124;
+      background: #eee;
     }
 
     .btn-ai {
       background: #1a73e8;
       color: #fff;
     }
-
-    .status {
-      width: 100%;
-      max-width: 980px;
-      margin: 8px auto 0;
-      color: #5f6368;
-      font-size: 13px;
-      min-height: 18px;
-      padding: 0 4px;
-    }
-
-    @media (max-width: 768px) {
-      .topbar {
-        padding: 16px 16px 0;
-      }
-
-      .hero {
-        padding: 20px 16px 160px;
-      }
-
-      .hero.compact .logo {
-        width: 180px;
-      }
-
-      .content {
-        padding: 0 12px 140px;
-      }
-
-      .input-row {
-        gap: 8px;
-      }
-
-      .query-input {
-        height: 52px;
-        font-size: 16px;
-      }
-
-      .btn {
-        height: 52px;
-        font-size: 14px;
-        padding: 0 16px;
-      }
-
-      .bubble {
-        max-width: 100%;
-      }
-    }
   </style>
 </head>
 <body>
   <div class="page">
+
     <div class="topbar">社内検索</div>
 
-    <section id="hero" class="hero">
-      <div class="logo-wrap">
-        <img class="logo" src="./img/logo.png" alt="TECHNOP@L-NET AI">
-      </div>
+    <section class="hero">
+      <img src="./img/logo.png" class="logo">
       <div class="subtitle">社内PDF・規定・安全資料を検索 / AIで質問</div>
+
+      <!-- ★カテゴリ -->
+      <div class="category-row">
+        <button class="category-btn">全て</button>
+        <button class="category-btn">書類</button>
+        <button class="category-btn">安全</button>
+        <button class="category-btn">規定</button>
+      </div>
     </section>
 
     <main class="content">
-      <div id="backRow" class="back-row">
-        <button id="backBtn" class="back-btn">← トップに戻る</button>
-      </div>
-
-      <div id="conversation" class="conversation">
-        <div id="emptyNote" class="empty-note">下の入力欄から検索またはAIに質問してください。</div>
-      </div>
+      <div id="conversation"></div>
     </main>
 
     <div class="bottom-area">
       <div class="input-row">
-        <input
-          id="queryInput"
-          class="query-input"
-          type="text"
-          placeholder="キーワードを入力"
-          autocomplete="off"
-        >
-        <button id="searchBtn" class="btn btn-search">検索</button>
-        <button id="askBtn" class="btn btn-ai">AIに質問</button>
+        <input class="query-input" placeholder="キーワードを入力">
+        <button class="btn btn-search">検索</button>
+        <button class="btn btn-ai">AIに質問</button>
       </div>
-      <div id="status" class="status"></div>
     </div>
+
   </div>
 
   <script src="./chat.js"></script>
