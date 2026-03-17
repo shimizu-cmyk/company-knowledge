@@ -53,7 +53,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 20px 180px;
+      padding: 24px 20px 80px;
       transition: all .25s ease;
     }
 
@@ -220,7 +220,7 @@
       width: 100%;
       max-width: 1100px;
       margin: 0 auto;
-      padding: 0 20px 120px;
+      padding: 0 20px 40px;
     }
 
     .back-row {
@@ -355,6 +355,7 @@
     }
 
     .bottom-bar {
+      display: none;
       position: fixed;
       left: 0;
       right: 0;
@@ -363,6 +364,14 @@
       backdrop-filter: blur(8px);
       border-top: 1px solid #e5e7eb;
       padding: 14px 16px 18px;
+    }
+
+    .hero.compact ~ .main {
+      padding-bottom: 120px;
+    }
+
+    .hero.compact ~ .bottom-bar {
+      display: block;
     }
 
     .input-wrap {
@@ -430,7 +439,7 @@
       }
 
       .hero {
-        padding: 18px 16px 160px;
+        padding: 18px 16px 80px;
       }
 
       .hero.compact .logo {
@@ -457,7 +466,11 @@
       }
 
       .main {
-        padding: 0 14px 120px;
+        padding: 0 14px 40px;
+      }
+
+      .hero.compact ~ .main {
+        padding-bottom: 120px;
       }
 
       .input-wrap {
@@ -611,11 +624,14 @@
           const category = btn.dataset.category || "";
           categoryToggleBtn.textContent = category ? `カテゴリ: ${category}` : "カテゴリ表示";
 
-          if (heroQueryInput) {
-            if (category) {
-              heroQueryInput.value = category;
-              syncInputs(heroQueryInput, bottomQueryInput);
-            }
+          if (heroQueryInput && category) {
+            heroQueryInput.value = category;
+            syncInputs(heroQueryInput, bottomQueryInput);
+          }
+
+          if (heroQueryInput && !category) {
+            heroQueryInput.value = "";
+            syncInputs(heroQueryInput, bottomQueryInput);
           }
 
           categoryMenu.classList.remove("show");
