@@ -36,9 +36,11 @@ function cleanText(text) {
 
 async function main() {
   console.log("start");
+  console.log("root:", ROOT);
+  console.log("pdf dir:", PDF_DIR);
 
   if (!fs.existsSync(PDF_DIR)) {
-    console.log("pdf folder not found");
+    console.log("pdf folder not found:", PDF_DIR);
     return;
   }
 
