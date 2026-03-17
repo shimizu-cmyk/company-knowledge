@@ -22,15 +22,6 @@ function normalizeText(text) {
     .trim();
 }
 
-function escapeHtml(text) {
-  return String(text || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function setStatus(text) {
   statusEl.textContent = text || "";
 }
@@ -191,13 +182,17 @@ function scoreRecord(record, query) {
 
 async function loadSearchIndex() {
   setStatus("検索データを読み込み中...");
+  console.log("loading search index:", SEARCH_INDEX_URL);
 
   const res = await fetch(SEARCH_INDEX_URL, { cache: "no-store" });
+  console.log("search index response status:", res.status);
+
   if (!res.ok) {
     throw new Error(`search-index.json の読み込みに失敗しました (${res.status})`);
   }
 
   const data = await res.json();
+  console.log("search index loaded:", data);
 
   if (!data || !Array.isArray(data.records)) {
     throw new Error("search-index.json の形式が不正です");
@@ -254,6 +249,7 @@ async function runSearch() {
     addAssistantMessage("検索結果", summary, results);
     setStatus(`検索結果 ${results.length}件`);
   } catch (error) {
+    console.error("runSearch error:", error);
     addAssistantMessage("検索エラー", error.message || "検索データの読み込みに失敗しました。");
     setStatus("検索失敗");
   }
@@ -314,6 +310,7 @@ async function runAskAI() {
     addAssistantMessage("AI回答", answer, topRefs);
     setStatus("AI回答完了");
   } catch (error) {
+    console.error("runAskAI error:", error);
     addAssistantMessage(
       "AI回答エラー",
       error.message || "AI回答の生成に失敗しました。"
@@ -335,9 +332,10 @@ backBtn.addEventListener("click", resetToTop);
 
 window.addEventListener("DOMContentLoaded", async () => {
   try {
+    console.log("DOMContentLoaded");
     await loadSearchIndex();
   } catch (error) {
-    console.error(error);
+    console.error("initial load error:", error);
     setStatus("検索データを読み込めませんでした");
   }
 });
