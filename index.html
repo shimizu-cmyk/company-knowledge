@@ -4,167 +4,578 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TECHNOP@L-NET 社内ナレッジAI</title>
+  <meta name="description" content="社内PDF・規定・安全資料を検索できる社内ナレッジAI">
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-    body {
+    html, body {
       margin: 0;
-      font-family: sans-serif;
-      background: #fff;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      background: #ffffff;
       color: #202124;
     }
 
+    body {
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 24px;
+      color: #5f6368;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
     .hero {
-      height: 100vh;
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding: 24px 20px 24px;
+      transition: all .25s ease;
     }
 
     .hero.compact {
-      height: auto;
-      padding: 20px;
+      flex: 0 0 auto;
       justify-content: flex-start;
+      padding: 18px 20px 10px;
+    }
+
+    .logo-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 14px;
     }
 
     .logo {
-      width: 320px;
-      margin-bottom: 20px;
-      transition: .3s;
+      width: min(420px, 78vw);
+      max-width: 420px;
+      display: block;
+      object-fit: contain;
+      transition: width .25s ease;
     }
 
     .hero.compact .logo {
       width: 180px;
+      max-width: 180px;
     }
 
-    .search-box {
-      width: 500px;
-      max-width: 90%;
-      border: 1px solid #ddd;
-      border-radius: 30px;
-      padding: 10px 20px;
+    .hero-sub {
+      margin-top: 10px;
+      color: #5f6368;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    .hero.compact .hero-sub {
+      display: none;
+    }
+
+    .hero-search-wrap {
+      width: 100%;
+      max-width: 760px;
+      margin-top: 18px;
       display: flex;
+      flex-direction: column;
       align-items: center;
+      gap: 18px;
+      transition: all .25s ease;
     }
 
-    .search-input {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-size: 18px;
+    .hero.compact .hero-search-wrap {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-width: none;
+      margin-top: 0;
+      padding: 14px 16px 18px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #e5e7eb;
+      z-index: 30;
     }
 
-    .actions {
-      margin-top: 15px;
+    .search-card {
+      width: 100%;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero.compact .search-card {
+      max-width: 1100px;
+      margin: 0 auto;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .input-shell {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .query-input {
+      width: 100%;
+      height: 58px;
+      border-radius: 999px;
+      border: 1px solid #dfe1e5;
+      padding: 0 24px;
+      font-size: 28px;
+      outline: none;
+      background: #fff;
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.08);
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .query-input:focus {
+      border-color: #d2d6dc;
+      box-shadow: 0 2px 10px rgba(32, 33, 36, 0.16);
+    }
+
+    .hero.compact .query-input {
+      height: 56px;
+      font-size: 18px;
+      padding: 0 22px;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hero.compact .hero-actions {
+      justify-content: flex-end;
       gap: 10px;
     }
 
-    button {
-      padding: 10px 18px;
-      border-radius: 20px;
-      border: 1px solid #ccc;
+    .btn {
+      height: 50px;
+      padding: 0 22px;
+      border-radius: 999px;
+      border: 1px solid #dadce0;
       background: #fff;
+      color: #202124;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
+      transition: .2s ease;
     }
 
-    .primary {
+    .btn:hover {
+      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+    }
+
+    .btn-ai {
       background: #1a73e8;
       color: #fff;
-      border: none;
+      border-color: #1a73e8;
+      box-shadow: 0 4px 14px rgba(26, 115, 232, 0.22);
     }
 
-    .bottom-bar {
-      display: none;
-      position: fixed;
-      bottom: 0;
+    .btn-ai:hover {
+      box-shadow: 0 6px 18px rgba(26, 115, 232, 0.28);
+    }
+
+    .main {
       width: 100%;
-      padding: 10px;
-      border-top: 1px solid #ddd;
-      background: #fff;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px 140px;
     }
 
-    .hero.compact ~ .bottom-bar {
+    .back-row {
+      margin: 4px 0 14px;
+      display: none;
+    }
+
+    .back-row.show {
       display: block;
     }
 
-    .input-wrap {
-      max-width: 900px;
-      margin: auto;
-      display: flex;
-      gap: 10px;
+    .back-btn {
+      border: none;
+      background: transparent;
+      color: #1a73e8;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 0;
     }
 
     .conversation {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 160px;
+    }
+
+    .message {
+      display: flex;
+      width: 100%;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message.assistant {
+      justify-content: flex-start;
+    }
+
+    .bubble {
+      max-width: min(820px, 92%);
+      padding: 16px 18px;
+      border-radius: 18px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 6px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .message.user .bubble {
+      background: #1a73e8;
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.assistant .bubble {
+      background: #fff;
+      color: #1f2937;
+      border: 1px solid #e5e7eb;
+      border-bottom-left-radius: 6px;
+    }
+
+    .bubble-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .refs {
+      margin-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 10px;
+    }
+
+    .refs-toggle {
+      background: transparent;
+      border: none;
+      color: #1a73e8;
+      padding: 0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .refs-list {
+      margin-top: 10px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .refs-list.show {
+      display: flex;
+    }
+
+    .ref-item {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .ref-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .ref-meta {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .ref-snippet {
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 8px;
+      line-height: 1.7;
+    }
+
+    .ref-link {
+      color: #1a73e8;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .empty-note {
+      color: #6b7280;
+      font-size: 14px;
+      text-align: center;
+      padding: 26px 0 10px;
+    }
+
+    .status {
+      width: 100%;
+      color: #6b7280;
+      font-size: 13px;
+      min-height: 18px;
+      text-align: left;
+      padding: 0 4px;
+    }
+
+    .hero:not(.compact) .status {
+      text-align: center;
+    }
+
+    .category-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.28);
+      display: none;
+      align-items: center;
+      justify-content: center;
       padding: 20px;
+      z-index: 100;
+    }
+
+    .category-modal.show {
+      display: flex;
+    }
+
+    .category-box {
+      width: min(560px, 100%);
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+      padding: 20px;
+    }
+
+    .category-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .category-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #202124;
+    }
+
+    .category-close {
+      border: none;
+      background: transparent;
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+      color: #5f6368;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .category-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font-size: 15px;
+      color: #202124;
+    }
+
+    .category-item:hover {
+      border-color: #c7d2fe;
+      background: #f8fbff;
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        height: 56px;
+        padding: 0 16px;
+      }
+
+      .hero {
+        padding: 18px 16px 20px;
+      }
+
+      .hero.compact {
+        padding: 14px 16px 8px;
+      }
+
+      .logo {
+        width: min(320px, 84vw);
+      }
+
+      .hero.compact .logo {
+        width: 150px;
+      }
+
+      .query-input {
+        height: 54px;
+        font-size: 18px;
+        padding: 0 18px;
+      }
+
+      .hero.compact .query-input {
+        height: 52px;
+        font-size: 16px;
+      }
+
+      .btn {
+        height: 46px;
+        font-size: 14px;
+        padding: 0 16px;
+      }
+
+      .hero.compact .hero-actions {
+        justify-content: center;
+        flex-wrap: nowrap;
+      }
+
+      .main {
+        padding: 0 14px 128px;
+      }
+
+      .bubble {
+        max-width: 100%;
+      }
+
+      .category-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
-
 <body>
+  <div class="app">
+    <div class="topbar">社内検索</div>
 
-<div id="hero" class="hero">
+    <section id="hero" class="hero">
+      <div class="logo-wrap">
+        <img class="logo" src="./img/logo.png" alt="TECHNOP@L-NET AI">
+      </div>
 
-  <img src="./img/logo.png" class="logo">
+      <div class="hero-sub">社内PDF・規定・安全資料を検索 / AIで質問</div>
 
-  <div class="search-box">
-    <input id="queryInput" class="search-input" placeholder="キーワードを入力">
+      <div class="hero-search-wrap">
+        <div class="search-card">
+          <div class="input-shell">
+            <input
+              id="queryInput"
+              class="query-input"
+              type="text"
+              placeholder="キーワードを入力"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="hero-actions">
+            <button id="categoryBtn" class="btn" type="button">カテゴリ表示</button>
+            <button id="searchBtn" class="btn btn-search" type="button">検索</button>
+            <button id="askBtn" class="btn btn-ai" type="button">AIに質問</button>
+          </div>
+
+          <div id="status" class="status"></div>
+        </div>
+      </div>
+    </section>
+
+    <main class="main">
+      <div id="backRow" class="back-row">
+        <button id="backBtn" class="back-btn">← トップに戻る</button>
+      </div>
+
+      <div id="conversation" class="conversation">
+        <div id="emptyNote" class="empty-note">下の入力欄から検索またはAIに質問してください。</div>
+      </div>
+    </main>
   </div>
 
-  <div class="actions">
-    <button id="searchBtn">検索</button>
-    <button id="askBtn" class="primary">AIに質問</button>
+  <div id="categoryModal" class="category-modal">
+    <div class="category-box">
+      <div class="category-head">
+        <div class="category-title">カテゴリ一覧</div>
+        <button id="categoryClose" class="category-close" type="button">×</button>
+      </div>
+
+      <div class="category-grid">
+        <button class="category-item" type="button" data-category="documents">documents</button>
+        <button class="category-item" type="button" data-category="it">it</button>
+        <button class="category-item" type="button" data-category="manual">manual</button>
+        <button class="category-item" type="button" data-category="rules">rules</button>
+        <button class="category-item" type="button" data-category="safety">safety</button>
+        <button class="category-item" type="button" data-category="system">system</button>
+      </div>
+    </div>
   </div>
 
-</div>
+  <script>
+    const categoryBtn = document.getElementById("categoryBtn");
+    const categoryModal = document.getElementById("categoryModal");
+    const categoryClose = document.getElementById("categoryClose");
+    const queryInputForCategory = document.getElementById("queryInput");
 
-<div id="conversation" class="conversation"></div>
+    categoryBtn.addEventListener("click", () => {
+      categoryModal.classList.add("show");
+    });
 
-<div class="bottom-bar">
-  <div class="input-wrap">
-    <input id="queryInputBottom" class="search-input">
-    <button id="searchBtnBottom">検索</button>
-    <button id="askBtnBottom" class="primary">AI</button>
-  </div>
-</div>
+    categoryClose.addEventListener("click", () => {
+      categoryModal.classList.remove("show");
+    });
 
-<script>
-const hero = document.getElementById("hero");
+    categoryModal.addEventListener("click", (e) => {
+      if (e.target === categoryModal) {
+        categoryModal.classList.remove("show");
+      }
+    });
 
-const topInput = document.getElementById("queryInput");
-const bottomInput = document.getElementById("queryInputBottom");
+    document.querySelectorAll(".category-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        queryInputForCategory.value = btn.dataset.category || "";
+        categoryModal.classList.remove("show");
+        queryInputForCategory.focus();
+      });
+    });
+  </script>
 
-const searchBtn = document.getElementById("searchBtn");
-const askBtn = document.getElementById("askBtn");
-
-const searchBtnBottom = document.getElementById("searchBtnBottom");
-const askBtnBottom = document.getElementById("askBtnBottom");
-
-function goCompact() {
-  hero.classList.add("compact");
-}
-
-function sync() {
-  bottomInput.value = topInput.value;
-}
-
-searchBtn.onclick = () => {
-  sync();
-  goCompact();
-};
-
-askBtn.onclick = () => {
-  sync();
-  goCompact();
-};
-
-searchBtnBottom.onclick = () => {};
-askBtnBottom.onclick = () => {};
-</script>
-
-<script src="./chat.js"></script>
-
+  <script src="./chat.js"></script>
 </body>
 </html>
