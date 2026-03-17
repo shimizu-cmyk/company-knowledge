@@ -6,13 +6,18 @@ const backRow = document.getElementById("backRow");
 const backBtn = document.getElementById("backBtn");
 const conversation = document.getElementById("conversation");
 const emptyNote = document.getElementById("emptyNote");
+
 const queryInput = document.getElementById("queryInput");
 const searchBtn = document.getElementById("searchBtn");
 const askBtn = document.getElementById("askBtn");
 const statusEl = document.getElementById("status");
 
+const heroQueryInput = document.getElementById("heroQueryInput");
+const categoryToggleBtn = document.getElementById("categoryToggleBtn");
+
 let searchData = null;
 let records = [];
+let selectedCategory = "";
 
 function normalizeText(text) {
   return String(text || "")
@@ -35,12 +40,28 @@ function resetToTop() {
   conversation.innerHTML = "";
   conversation.appendChild(emptyNote);
   emptyNote.style.display = "block";
+
   hero.classList.remove("compact");
   backRow.classList.remove("show");
+
   setStatus("");
   queryInput.value = "";
-  queryInput.focus();
+  if (heroQueryInput) {
+    heroQueryInput.value = "";
+  }
+
+  selectedCategory = "";
+  if (categoryToggleBtn) {
+    categoryToggleBtn.textContent = "カテゴリ表示";
+  }
+
   window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (heroQueryInput) {
+    heroQueryInput.focus();
+  } else {
+    queryInput.focus();
+  }
 }
 
 function addUserMessage(text) {
@@ -167,13 +188,15 @@ function scoreRecord(record, query) {
   let score = 0;
 
   if (!q) return 0;
+
   if (title.includes(q)) score += 120;
-  if (category.includes(q)) score += 20;
+  if (category.includes(q)) score += 30;
   if (content.includes(q)) score += 40;
 
   const words = q.split(" ").filter(Boolean);
   words.forEach((word) => {
     if (title.includes(word)) score += 30;
+    if (category.includes(word)) score += 15;
     if (content.includes(word)) score += 10;
   });
 
@@ -182,17 +205,13 @@ function scoreRecord(record, query) {
 
 async function loadSearchIndex() {
   setStatus("検索データを読み込み中...");
-  console.log("loading search index:", SEARCH_INDEX_URL);
 
   const res = await fetch(SEARCH_INDEX_URL, { cache: "no-store" });
-  console.log("search index response status:", res.status);
-
   if (!res.ok) {
     throw new Error(`search-index.json の読み込みに失敗しました (${res.status})`);
   }
 
   const data = await res.json();
-  console.log("search index loaded:", data);
 
   if (!data || !Array.isArray(data.records)) {
     throw new Error("search-index.json の形式が不正です");
@@ -204,10 +223,31 @@ async function loadSearchIndex() {
 }
 
 function searchDocs(query) {
-  const scored = records
+  let targetRecords = records;
+
+  if (selectedCategory) {
+    targetRecords = records.filter(
+      (record) => normalizeText(record.category) === normalizeText(selectedCategory)
+    );
+  }
+
+  const q = query.trim();
+
+  if (!q) {
+    return targetRecords.slice(0, 8).map((item) => ({
+      title: item.title,
+      category: item.category,
+      pdfUrl: item.pdfUrl,
+      viewerUrl: item.viewerUrl,
+      snippet: makeSnippet(item.content, item.category || ""),
+      content: item.content
+    }));
+  }
+
+  const scored = targetRecords
     .map((record) => ({
       ...record,
-      score: scoreRecord(record, query)
+      score: scoreRecord(record, q)
     }))
     .filter((record) => record.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -218,14 +258,23 @@ function searchDocs(query) {
     category: item.category,
     pdfUrl: item.pdfUrl,
     viewerUrl: item.viewerUrl,
-    snippet: makeSnippet(item.content, query),
+    snippet: makeSnippet(item.content, q),
     content: item.content
   }));
 }
 
+function getDisplayQuery(rawQuery) {
+  const q = rawQuery.trim();
+  if (q) return q;
+  if (selectedCategory) return `カテゴリ: ${selectedCategory}`;
+  return "";
+}
+
 async function runSearch() {
-  const query = queryInput.value.trim();
-  if (!query) {
+  const rawQuery = queryInput.value.trim();
+  const displayQuery = getDisplayQuery(rawQuery);
+
+  if (!displayQuery) {
     setStatus("キーワードを入力してください");
     return;
   }
@@ -235,12 +284,15 @@ async function runSearch() {
       await loadSearchIndex();
     }
 
-    addUserMessage(query);
+    addUserMessage(displayQuery);
 
-    const results = searchDocs(query);
+    const results = searchDocs(rawQuery);
 
     if (results.length === 0) {
-      addAssistantMessage("検索結果", "該当する資料が見つかりませんでした。別の言い回しでも試してください。");
+      addAssistantMessage(
+        "検索結果",
+        "該当する資料が見つかりませんでした。別の言い回しでも試してください。"
+      );
       setStatus("検索結果 0件");
       return;
     }
@@ -249,15 +301,16 @@ async function runSearch() {
     addAssistantMessage("検索結果", summary, results);
     setStatus(`検索結果 ${results.length}件`);
   } catch (error) {
-    console.error("runSearch error:", error);
     addAssistantMessage("検索エラー", error.message || "検索データの読み込みに失敗しました。");
     setStatus("検索失敗");
   }
 }
 
 async function runAskAI() {
-  const query = queryInput.value.trim();
-  if (!query) {
+  const rawQuery = queryInput.value.trim();
+  const displayQuery = getDisplayQuery(rawQuery);
+
+  if (!displayQuery) {
     setStatus("質問を入力してください");
     return;
   }
@@ -267,10 +320,10 @@ async function runAskAI() {
       await loadSearchIndex();
     }
 
-    addUserMessage(query);
+    addUserMessage(displayQuery);
     setStatus("AI回答を生成中...");
 
-    const results = searchDocs(query);
+    const results = searchDocs(rawQuery);
     const topRefs = results.slice(0, 5);
 
     if (topRefs.length === 0) {
@@ -282,13 +335,17 @@ async function runAskAI() {
       return;
     }
 
+    const questionForApi = selectedCategory && !rawQuery
+      ? `カテゴリ「${selectedCategory}」の資料を要約してください`
+      : rawQuery;
+
     const res = await fetch(ASK_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        question: query,
+        question: questionForApi,
         references: topRefs.map((item) => ({
           title: item.title,
           category: item.category,
@@ -310,7 +367,6 @@ async function runAskAI() {
     addAssistantMessage("AI回答", answer, topRefs);
     setStatus("AI回答完了");
   } catch (error) {
-    console.error("runAskAI error:", error);
     addAssistantMessage(
       "AI回答エラー",
       error.message || "AI回答の生成に失敗しました。"
@@ -330,12 +386,23 @@ queryInput.addEventListener("keydown", (e) => {
 
 backBtn.addEventListener("click", resetToTop);
 
+document.querySelectorAll(".category-item").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    selectedCategory = btn.dataset.category || "";
+
+    if (selectedCategory) {
+      setStatus(`カテゴリ選択: ${selectedCategory}`);
+    } else {
+      setStatus("カテゴリ解除");
+    }
+  });
+});
+
 window.addEventListener("DOMContentLoaded", async () => {
   try {
-    console.log("DOMContentLoaded");
     await loadSearchIndex();
   } catch (error) {
-    console.error("initial load error:", error);
+    console.error(error);
     setStatus("検索データを読み込めませんでした");
   }
 });
